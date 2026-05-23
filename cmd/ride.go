@@ -38,7 +38,7 @@ func init() {
 	// Mirror --field on rideCmd so cobra parses it when `ride <id> stream --field=...`
 	// is invoked (cobra routes through rideCmd since <id> is numeric, not a subcommand name).
 	// This flag MUST stay in sync with the streamCmd --field flag in stream.go.
-	rideCmd.Flags().StringVar(&streamField, "field", "", "field to chart: power, hr, speed, cadence, altitude")
+	rideCmd.Flags().StringSliceVar(&streamFields, "field", nil, "field(s) to chart: power, hr, speed, cadence, altitude")
 	_ = rideCmd.Flags().MarkHidden("field")
 }
 
