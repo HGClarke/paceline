@@ -23,6 +23,7 @@ type ridesModel struct {
 	limit    int
 	total    int
 	selected *parser.Ride
+	err      error
 	loadPage func(page int) ([]parser.Ride, int, error)
 }
 
@@ -43,20 +44,31 @@ func (m ridesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "n", "right":
-			maxPage := (m.total + m.limit - 1) / m.limit
+			maxPage := 1
+			if m.limit > 0 {
+				maxPage = (m.total + m.limit - 1) / m.limit
+			}
 			if m.page < maxPage {
 				m.page++
-				rides, total, _ := m.loadPage(m.page)
-				m.rides = rides
-				m.total = total
+				rides, total, err := m.loadPage(m.page)
+				if err != nil {
+					m.err = err
+				} else {
+					m.rides = rides
+					m.total = total
+				}
 				m.cursor = 0
 			}
 		case "p", "left":
 			if m.page > 1 {
 				m.page--
-				rides, total, _ := m.loadPage(m.page)
-				m.rides = rides
-				m.total = total
+				rides, total, err := m.loadPage(m.page)
+				if err != nil {
+					m.err = err
+				} else {
+					m.rides = rides
+					m.total = total
+				}
 				m.cursor = 0
 			}
 		case "enter":
@@ -72,7 +84,16 @@ func (m ridesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m ridesModel) View() string {
 	var sb strings.Builder
-	maxPage := (m.total + m.limit - 1) / m.limit
+	if m.err != nil {
+		fmt.Fprintf(&sb, "Error: %v\n\n", m.err)
+	}
+	maxPage := 1
+	if m.limit > 0 {
+		maxPage = (m.total + m.limit - 1) / m.limit
+	}
+	if maxPage < 1 {
+		maxPage = 1
+	}
 	fmt.Fprintf(&sb, "Rides — Page %d of %d  (↑/↓ move, n/p page, enter select, q quit)\n\n", m.page, maxPage)
 
 	header := fmt.Sprintf("  %-4s  %-12s  %-10s  %-10s  %-10s\n", "ID", "Date", "Distance", "Duration", "Elevation")
