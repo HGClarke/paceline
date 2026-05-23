@@ -14,7 +14,7 @@ type Store struct {
 }
 
 // Open opens (or creates) a DuckDB database at path.
-// Pass "" or ":memory:" for an in-memory database.
+// Pass ":memory:" for an in-memory database.
 func Open(path string) (*Store, error) {
 	db, err := sql.Open("duckdb", path)
 	if err != nil {
@@ -39,11 +39,11 @@ func (s *Store) migrate() error {
 			id            BIGINT  DEFAULT nextval('rides_id_seq') PRIMARY KEY,
 			filename      TEXT    UNIQUE NOT NULL,
 			recorded_at   TIMESTAMP NOT NULL,
-			distance_m    DOUBLE,
-			duration_s    INTEGER,
-			elevation_gain_m DOUBLE,
-			avg_speed_mps DOUBLE,
-			max_speed_mps DOUBLE,
+			distance_m    DOUBLE NOT NULL DEFAULT 0,
+			duration_s    INTEGER NOT NULL DEFAULT 0,
+			elevation_gain_m DOUBLE NOT NULL DEFAULT 0,
+			avg_speed_mps DOUBLE NOT NULL DEFAULT 0,
+			max_speed_mps DOUBLE NOT NULL DEFAULT 0,
 			avg_hr_bpm    INTEGER,
 			max_hr_bpm    INTEGER,
 			avg_power_w   INTEGER,
@@ -61,12 +61,17 @@ func (s *Store) migrate() error {
 			cadence_rpm INTEGER,
 			altitude_m  DOUBLE,
 			lat         DOUBLE,
-			lon         DOUBLE
+			lon         DOUBLE,
+			PRIMARY KEY (ride_id, elapsed_s)
 		)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.db.Exec(stmt); err != nil {
-			return fmt.Errorf("exec %q: %w", stmt[:40], err)
+			preview := stmt
+			if len(preview) > 40 {
+				preview = preview[:40]
+			}
+			return fmt.Errorf("exec %q: %w", preview, err)
 		}
 	}
 	return nil
@@ -76,11 +81,14 @@ func (s *Store) migrate() error {
 func DefaultPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get home dir: %w", err)
 	}
 	dir := filepath.Join(home, ".paceline")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
+		return "", fmt.Errorf("create .paceline dir: %w", err)
 	}
 	return filepath.Join(dir, "data.db"), nil
 }
+
+// DB returns the underlying sql.DB for testing purposes.
+func (s *Store) DB() *sql.DB { return s.db }
