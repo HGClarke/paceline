@@ -184,3 +184,31 @@ func TestListRides_EmptyResult(t *testing.T) {
 		t.Error("expected empty slice, got nil")
 	}
 }
+
+func TestGetStats_DefaultsToCurrentMonth(t *testing.T) {
+	s := openTestStore(t)
+
+	now := time.Now()
+	year, month := now.Year(), int(now.Month())
+
+	rides := []parser.Ride{
+		{Filename: "this_month.gpx", RecordedAt: now, DistanceM: 30000, DurationS: 3600, ElevationGainM: 400, SourceFormat: "gpx"},
+		{Filename: "last_year.gpx", RecordedAt: now.AddDate(-1, 0, 0), DistanceM: 20000, DurationS: 2400, ElevationGainM: 200, SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	stats, err := s.GetStats(store.StatsFilters{Year: &year, Month: &month})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+	if stats.RideCount != 1 {
+		t.Errorf("expected 1 ride this month, got %d", stats.RideCount)
+	}
+	if stats.TotalDistanceM != 30000 {
+		t.Errorf("expected distance 30000, got %v", stats.TotalDistanceM)
+	}
+}

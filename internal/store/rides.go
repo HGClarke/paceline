@@ -125,6 +125,59 @@ func buildRideWhere(f RideFilters) (string, []any) {
 	return " WHERE " + strings.Join(clauses, " AND "), args
 }
 
+type StatsFilters struct {
+	Year  *int
+	Month *int
+	Week  *int
+}
+
+type Stats struct {
+	RideCount       int
+	TotalDistanceM  float64
+	TotalDurationS  int
+	TotalElevationM float64
+}
+
+func (s *Store) GetStats(f StatsFilters) (Stats, error) {
+	where, args := buildStatsWhere(f)
+	row := s.db.QueryRow(`
+		SELECT
+			COUNT(*),
+			COALESCE(SUM(distance_m), 0),
+			COALESCE(SUM(duration_s), 0),
+			COALESCE(SUM(elevation_gain_m), 0)
+		FROM rides`+where, args...)
+
+	var st Stats
+	if err := row.Scan(&st.RideCount, &st.TotalDistanceM, &st.TotalDurationS, &st.TotalElevationM); err != nil {
+		return st, fmt.Errorf("get stats: %w", err)
+	}
+	return st, nil
+}
+
+func buildStatsWhere(f StatsFilters) (string, []any) {
+	var clauses []string
+	var args []any
+
+	if f.Year != nil {
+		clauses = append(clauses, "EXTRACT(YEAR FROM recorded_at) = ?")
+		args = append(args, *f.Year)
+	}
+	if f.Month != nil {
+		clauses = append(clauses, "EXTRACT(MONTH FROM recorded_at) = ?")
+		args = append(args, *f.Month)
+	}
+	if f.Week != nil {
+		clauses = append(clauses, "EXTRACT(WEEK FROM recorded_at) = ?")
+		args = append(args, *f.Week)
+	}
+
+	if len(clauses) == 0 {
+		return "", args
+	}
+	return " WHERE " + strings.Join(clauses, " AND "), args
+}
+
 type rideScanner interface {
 	Scan(dest ...any) error
 }
