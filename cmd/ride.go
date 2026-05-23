@@ -35,10 +35,11 @@ var rideCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(rideCmd)
 	rideCmd.AddCommand(streamCmd)
-	// Mirror --field on rideCmd so cobra can parse it when the user writes
-	// `ride <id> stream --field=...` (cobra routes this to rideCmd since the
-	// first non-flag arg is numeric, not "stream").
+	// Mirror --field on rideCmd so cobra parses it when `ride <id> stream --field=...`
+	// is invoked (cobra routes through rideCmd since <id> is numeric, not a subcommand name).
+	// This flag MUST stay in sync with the streamCmd --field flag in stream.go.
 	rideCmd.Flags().StringVar(&streamField, "field", "", "field to chart: power, hr, speed, cadence, altitude")
+	_ = rideCmd.Flags().MarkHidden("field")
 }
 
 func runRide(cmd *cobra.Command, args []string) error {

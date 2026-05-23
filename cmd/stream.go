@@ -14,6 +14,7 @@ var streamField string
 var streamCmd = &cobra.Command{
 	Use:   "stream",
 	Short: "Show a time-series chart for a ride stream",
+	Args:  cobra.NoArgs,
 	RunE:  runStream,
 }
 

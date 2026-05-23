@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/hollandclarke/paceline/internal/display"
@@ -42,7 +43,6 @@ func runStats(cmd *cobra.Command, args []string) error {
 
 	now := time.Now()
 	f := store.StatsFilters{}
-	label := "current month"
 
 	noFlags := statsYear == 0 && statsMonth == 0 && statsWeek == 0
 	if noFlags {
@@ -52,7 +52,6 @@ func runStats(cmd *cobra.Command, args []string) error {
 	} else {
 		if statsYear != 0 {
 			f.Year = &statsYear
-			label = fmt.Sprintf("year %d", statsYear)
 		}
 		if statsMonth != 0 {
 			f.Month = &statsMonth
@@ -60,7 +59,6 @@ func runStats(cmd *cobra.Command, args []string) error {
 				y := now.Year()
 				f.Year = &y
 			}
-			label = fmt.Sprintf("%s %02d", label, statsMonth)
 		}
 		if statsWeek != 0 {
 			f.Week = &statsWeek
@@ -68,7 +66,29 @@ func runStats(cmd *cobra.Command, args []string) error {
 				y := now.Year()
 				f.Year = &y
 			}
-			label = fmt.Sprintf("%s week %d", label, statsWeek)
+		}
+	}
+
+	// Build human-readable label from the active filters.
+	// When no flags were given, always use "current month" regardless of the
+	// implicit year/month we injected into the filters.
+	var label string
+	if noFlags {
+		label = "current month"
+	} else {
+		var labelParts []string
+		if f.Year != nil {
+			labelParts = append(labelParts, fmt.Sprintf("%d", *f.Year))
+		}
+		if f.Month != nil {
+			labelParts = append(labelParts, fmt.Sprintf("month %02d", *f.Month))
+		}
+		if f.Week != nil {
+			labelParts = append(labelParts, fmt.Sprintf("week %d", *f.Week))
+		}
+		label = strings.Join(labelParts, " ")
+		if label == "" {
+			label = "current month"
 		}
 	}
 
