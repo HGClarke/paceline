@@ -74,7 +74,7 @@ func (s *Store) AvailableFields(rideID int64) ([]string, error) {
 		{"altitude", "altitude_m"},
 	}
 
-	var available []string
+	available := make([]string, 0)
 	for _, c := range checks {
 		var n int
 		err := s.db.QueryRow(fmt.Sprintf(
