@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -20,28 +21,23 @@ type RideFilters struct {
 // InsertRide inserts a ride and returns its new ID.
 // Returns 0 (no error) if the filename already exists (idempotent).
 func (s *Store) InsertRide(r parser.Ride) (int64, error) {
-	var existing int64
-	err := s.db.QueryRow(`SELECT id FROM rides WHERE filename = ?`, r.Filename).Scan(&existing)
-	if err == nil {
-		return 0, nil // already imported
-	}
-	if err != sql.ErrNoRows {
-		return 0, fmt.Errorf("check existing: %w", err)
-	}
-
 	var id int64
-	err = s.db.QueryRow(`
+	err := s.db.QueryRow(`
 		INSERT INTO rides (filename, recorded_at, distance_m, duration_s,
 			elevation_gain_m, avg_speed_mps, max_speed_mps,
 			avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
 			calories, source_format)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (filename) DO NOTHING
 		RETURNING id`,
 		r.Filename, r.RecordedAt, r.DistanceM, r.DurationS,
 		r.ElevationGainM, r.AvgSpeedMPS, r.MaxSpeedMPS,
 		r.AvgHRBPM, r.MaxHRBPM, r.AvgPowerW, r.MaxPowerW,
 		r.Calories, r.SourceFormat,
 	).Scan(&id)
+	if err == sql.ErrNoRows {
+		return 0, nil // filename already exists, skipped
+	}
 	if err != nil {
 		return 0, fmt.Errorf("insert ride: %w", err)
 	}
@@ -56,7 +52,11 @@ func (s *Store) GetRide(id int64) (parser.Ride, error) {
 			avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
 			calories, source_format
 		FROM rides WHERE id = ?`, id)
-	return scanRide(row)
+	r, err := scanRide(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return parser.Ride{}, fmt.Errorf("ride %d not found", id)
+	}
+	return r, err
 }
 
 // ListRides returns filtered rides (most recent first) and the total count.
@@ -88,7 +88,7 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 	}
 	defer rows.Close()
 
-	var rides []parser.Ride
+	rides := make([]parser.Ride, 0)
 	for rows.Next() {
 		r, err := scanRide(rows)
 		if err != nil {
@@ -96,7 +96,10 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 		}
 		rides = append(rides, r)
 	}
-	return rides, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return rides, total, nil
 }
 
 func buildRideWhere(f RideFilters) (string, []any) {
