@@ -54,7 +54,13 @@ func runRide(cmd *cobra.Command, args []string) error {
 				if err := sub.ParseFlags(args[2:]); err != nil {
 					return err
 				}
-				return sub.RunE(sub, sub.Flags().Args())
+				remaining := sub.Flags().Args()
+				if sub.Args != nil {
+					if err := sub.Args(sub, remaining); err != nil {
+						return err
+					}
+				}
+				return sub.RunE(sub, remaining)
 			}
 		}
 	}
