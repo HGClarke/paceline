@@ -185,15 +185,16 @@ func TestListRides_EmptyResult(t *testing.T) {
 	}
 }
 
-func TestGetStats_DefaultsToCurrentMonth(t *testing.T) {
+func TestGetStats_FiltersByYearAndMonth(t *testing.T) {
 	s := openTestStore(t)
 
-	now := time.Now()
-	year, month := now.Year(), int(now.Month())
+	// Use a fixed date well within any month boundary.
+	fixedNow := time.Date(2025, 6, 15, 10, 0, 0, 0, time.UTC)
+	year, month := 2025, 6
 
 	rides := []parser.Ride{
-		{Filename: "this_month.gpx", RecordedAt: now, DistanceM: 30000, DurationS: 3600, ElevationGainM: 400, SourceFormat: "gpx"},
-		{Filename: "last_year.gpx", RecordedAt: now.AddDate(-1, 0, 0), DistanceM: 20000, DurationS: 2400, ElevationGainM: 200, SourceFormat: "gpx"},
+		{Filename: "this_month.gpx", RecordedAt: fixedNow, DistanceM: 30000, DurationS: 3600, ElevationGainM: 400, SourceFormat: "gpx"},
+		{Filename: "last_year.gpx", RecordedAt: fixedNow.AddDate(-1, 0, 0), DistanceM: 20000, DurationS: 2400, ElevationGainM: 200, SourceFormat: "gpx"},
 	}
 	for _, r := range rides {
 		if _, err := s.InsertRide(r); err != nil {
@@ -210,5 +211,32 @@ func TestGetStats_DefaultsToCurrentMonth(t *testing.T) {
 	}
 	if stats.TotalDistanceM != 30000 {
 		t.Errorf("expected distance 30000, got %v", stats.TotalDistanceM)
+	}
+	if stats.TotalDurationS != 3600 {
+		t.Errorf("expected duration 3600, got %d", stats.TotalDurationS)
+	}
+	if stats.TotalElevationM != 400 {
+		t.Errorf("expected elevation 400, got %v", stats.TotalElevationM)
+	}
+}
+
+func TestGetStats_Empty(t *testing.T) {
+	s := openTestStore(t)
+	year, month := 2025, 1
+	stats, err := s.GetStats(store.StatsFilters{Year: &year, Month: &month})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+	if stats.RideCount != 0 {
+		t.Errorf("expected 0 rides, got %d", stats.RideCount)
+	}
+	if stats.TotalDistanceM != 0 {
+		t.Errorf("expected 0 distance, got %v", stats.TotalDistanceM)
+	}
+	if stats.TotalDurationS != 0 {
+		t.Errorf("expected 0 duration, got %d", stats.TotalDurationS)
+	}
+	if stats.TotalElevationM != 0 {
+		t.Errorf("expected 0 elevation, got %v", stats.TotalElevationM)
 	}
 }
