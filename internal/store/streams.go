@@ -47,6 +47,7 @@ func (s *Store) GetStreams(rideID int64, field string) ([]parser.Stream, error) 
 		return nil, fmt.Errorf("unknown field %q: valid fields are power, hr, speed, cadence, altitude", field)
 	}
 
+	// col is whitelisted by fieldColumn — not from user input directly.
 	rows, err := s.db.Query(fmt.Sprintf(`
 		SELECT ride_id, timestamp, elapsed_s, speed_mps, hr_bpm,
 			power_w, cadence_rpm, altitude_m, lat, lon
@@ -62,29 +63,29 @@ func (s *Store) GetStreams(rideID int64, field string) ([]parser.Stream, error) 
 
 // AvailableFields returns which stream fields have at least one non-null value for a ride.
 func (s *Store) AvailableFields(rideID int64) ([]string, error) {
-	type check struct {
-		name string
-		col  string
-	}
-	checks := []check{
-		{"power", "power_w"},
-		{"hr", "hr_bpm"},
-		{"speed", "speed_mps"},
-		{"cadence", "cadence_rpm"},
-		{"altitude", "altitude_m"},
+	var pw, hr, spd, cad, alt int
+	err := s.db.QueryRow(`
+		SELECT
+			COUNT(power_w),
+			COUNT(hr_bpm),
+			COUNT(speed_mps),
+			COUNT(cadence_rpm),
+			COUNT(altitude_m)
+		FROM streams WHERE ride_id = ?`, rideID).Scan(&pw, &hr, &spd, &cad, &alt)
+	if err != nil {
+		return nil, fmt.Errorf("available fields: %w", err)
 	}
 
 	available := make([]string, 0)
-	for _, c := range checks {
-		var n int
-		err := s.db.QueryRow(fmt.Sprintf(
-			`SELECT COUNT(*) FROM streams WHERE ride_id = ? AND %s IS NOT NULL`, c.col,
-		), rideID).Scan(&n)
-		if err != nil {
-			return nil, err
-		}
-		if n > 0 {
-			available = append(available, c.name)
+	type entry struct {
+		name string
+		n    int
+	}
+	for _, e := range []entry{
+		{"power", pw}, {"hr", hr}, {"speed", spd}, {"cadence", cad}, {"altitude", alt},
+	} {
+		if e.n > 0 {
+			available = append(available, e.name)
 		}
 	}
 	return available, nil
@@ -128,7 +129,7 @@ func scanStreams(rows interface {
 		points = append(points, p)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("scan streams: %w", err)
 	}
 	return points, nil
 }
