@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -217,6 +218,81 @@ func TestGetStats_FiltersByYearAndMonth(t *testing.T) {
 	}
 	if stats.TotalElevationM != 400 {
 		t.Errorf("expected elevation 400, got %v", stats.TotalElevationM)
+	}
+}
+
+func TestDeleteRide(t *testing.T) {
+	s := openTestStore(t)
+	rideID := insertTestRide(t, s, "delete_me.gpx")
+
+	// Insert streams for the ride.
+	hr := 150
+	streams := []parser.Stream{
+		{RideID: rideID, Timestamp: time.Now(), ElapsedS: 0, HRBPM: &hr},
+		{RideID: rideID, Timestamp: time.Now().Add(time.Second), ElapsedS: 1, HRBPM: &hr},
+	}
+	if err := s.InsertStreams(streams); err != nil {
+		t.Fatalf("InsertStreams: %v", err)
+	}
+
+	if err := s.DeleteRide(rideID); err != nil {
+		t.Fatalf("DeleteRide: %v", err)
+	}
+
+	// Ride should be gone.
+	if _, err := s.GetRide(rideID); err == nil {
+		t.Error("expected GetRide to return error after delete, got nil")
+	}
+
+	// Streams should be gone.
+	pts, err := s.GetStreams(rideID, "hr")
+	if err != nil {
+		t.Fatalf("GetStreams after delete: %v", err)
+	}
+	if len(pts) != 0 {
+		t.Errorf("expected 0 stream points after delete, got %d", len(pts))
+	}
+}
+
+func TestDeleteRide_NotFound(t *testing.T) {
+	s := openTestStore(t)
+	err := s.DeleteRide(9999)
+	if err == nil {
+		t.Fatal("expected error deleting non-existent ride, got nil")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("expected 'not found' in error, got: %v", err)
+	}
+}
+
+func TestDeleteAll(t *testing.T) {
+	s := openTestStore(t)
+
+	// Insert two rides each with streams.
+	hr := 160
+	for i, name := range []string{"ride_a.gpx", "ride_b.gpx"} {
+		id := insertTestRide(t, s, name)
+		streams := []parser.Stream{
+			{RideID: id, Timestamp: time.Now().Add(time.Duration(i) * time.Second), ElapsedS: i, HRBPM: &hr},
+		}
+		if err := s.InsertStreams(streams); err != nil {
+			t.Fatalf("InsertStreams: %v", err)
+		}
+	}
+
+	if err := s.DeleteAll(); err != nil {
+		t.Fatalf("DeleteAll: %v", err)
+	}
+
+	rides, total, err := s.ListRides(store.RideFilters{Page: 1, Limit: 100})
+	if err != nil {
+		t.Fatalf("ListRides after DeleteAll: %v", err)
+	}
+	if total != 0 {
+		t.Errorf("expected 0 rides after DeleteAll, got total=%d", total)
+	}
+	if len(rides) != 0 {
+		t.Errorf("expected empty rides slice after DeleteAll, got %d", len(rides))
 	}
 }
 

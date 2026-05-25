@@ -178,6 +178,41 @@ func buildStatsWhere(f StatsFilters) (string, []any) {
 	return " WHERE " + strings.Join(clauses, " AND "), args
 }
 
+// DeleteRide deletes a ride and its associated stream data by ID.
+// Returns an error if no ride with the given ID exists.
+// Streams are deleted first to satisfy the FK constraint before removing the ride.
+func (s *Store) DeleteRide(id int64) error {
+	// Check ride exists before deleting.
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM rides WHERE id = ?`, id).Scan(&count); err != nil {
+		return fmt.Errorf("check ride: %w", err)
+	}
+	if count == 0 {
+		return fmt.Errorf("ride %d not found", id)
+	}
+
+	// Delete streams first (FK: streams.ride_id → rides.id).
+	if _, err := s.db.Exec(`DELETE FROM streams WHERE ride_id = ?`, id); err != nil {
+		return fmt.Errorf("delete streams: %w", err)
+	}
+	if _, err := s.db.Exec(`DELETE FROM rides WHERE id = ?`, id); err != nil {
+		return fmt.Errorf("delete ride: %w", err)
+	}
+	return nil
+}
+
+// DeleteAll removes all rides and stream data from the database.
+// Streams are deleted first to satisfy FK constraints.
+func (s *Store) DeleteAll() error {
+	if _, err := s.db.Exec(`DELETE FROM streams`); err != nil {
+		return fmt.Errorf("delete all streams: %w", err)
+	}
+	if _, err := s.db.Exec(`DELETE FROM rides`); err != nil {
+		return fmt.Errorf("delete all rides: %w", err)
+	}
+	return nil
+}
+
 type rideScanner interface {
 	Scan(dest ...any) error
 }
