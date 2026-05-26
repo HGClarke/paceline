@@ -491,3 +491,39 @@ func TestListRides_HasPositions(t *testing.T) {
 		t.Errorf("rides[0].Filename = %q, want \"newest.gpx\"", rides[0].Filename)
 	}
 }
+
+func TestListRides_FilteredPositionsAreGlobal(t *testing.T) {
+	// Verify the documented behavior: "Position reflects its global rank across all rides,
+	// even when filters are applied."
+	s := openTestStore(t)
+
+	// Insert 4 rides across different months
+	s.InsertRide(parser.Ride{Filename: "mar15.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	s.InsertRide(parser.Ride{Filename: "feb10.gpx", RecordedAt: time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	s.InsertRide(parser.Ride{Filename: "jan25.gpx", RecordedAt: time.Date(2024, 1, 25, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	s.InsertRide(parser.Ride{Filename: "jan10.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+
+	// Filter by January only
+	year, month := 2024, 1
+	rides, total, err := s.ListRides(store.RideFilters{Year: &year, Month: &month, Limit: 10, Page: 1})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+
+	if len(rides) != 2 {
+		t.Fatalf("expected 2 January rides, got %d", len(rides))
+	}
+	if total != 2 {
+		t.Errorf("total count = %d, want 2 (filtered count, not global)", total)
+	}
+
+	// Critical: According to the docstring, positions should be GLOBAL.
+	// jan25.gpx should have global position 3 (mar15=1, feb10=2, jan25=3, jan10=4)
+	// jan10.gpx should have global position 4.
+	if rides[0].Position != 3 {
+		t.Errorf("rides[0] (jan25).Position = %d, want 3 (global rank)", rides[0].Position)
+	}
+	if rides[1].Position != 4 {
+		t.Errorf("rides[1] (jan10).Position = %d, want 4 (global rank)", rides[1].Position)
+	}
+}
