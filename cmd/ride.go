@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/hollandclarke/paceline/internal/display"
+	"github.com/hollandclarke/paceline/internal/parser"
 	"github.com/hollandclarke/paceline/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,11 @@ import (
 // currentRideID is set by rideCmd's PersistentPreRunE so that the stream
 // subcommand can read it without re-parsing the positional argument.
 var currentRideID int64
+
+// currentRide holds the full ride fetched in PersistentPreRunE so that runRide
+// and subcommands can use it without a second DB round-trip. Position is
+// populated here, fixing the "id": 0 bug in --json output.
+var currentRide parser.Ride
 
 var rideCmd = &cobra.Command{
 	Use:   "ride <position>",
@@ -39,6 +45,7 @@ var rideCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		currentRide = ride
 		currentRideID = ride.ID
 		return nil
 	},
@@ -78,21 +85,6 @@ func runRide(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	dbPath, err := store.DefaultPath()
-	if err != nil {
-		return err
-	}
-	s, err := store.Open(dbPath)
-	if err != nil {
-		return err
-	}
-	defer s.Close()
-
-	ride, err := s.GetRide(currentRideID)
-	if err != nil {
-		return fmt.Errorf("ride %d not found", currentRideID)
-	}
-
-	display.PrintRideDetail(os.Stdout, ride, jsonOutput)
+	display.PrintRideDetail(os.Stdout, currentRide, jsonOutput)
 	return nil
 }

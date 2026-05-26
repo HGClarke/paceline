@@ -54,7 +54,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if len(fields) == 0 {
-			return fmt.Errorf("ride %d has no stream data", id)
+			return fmt.Errorf("ride #%d has no stream data", currentRide.Position)
 		}
 	}
 
@@ -68,7 +68,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 		}
 		if len(points) == 0 {
 			available, _ := s.AvailableFields(id)
-			fmt.Fprintf(os.Stderr, "No %s data for ride %d. Available fields: %v\n", field, id, available)
+			fmt.Fprintf(os.Stderr, "No %s data for ride #%d. Available fields: %v\n", field, currentRide.Position, available)
 			continue
 		}
 		display.PrintStreamChart(os.Stdout, points, field)

@@ -498,10 +498,18 @@ func TestListRides_FilteredPositionsAreGlobal(t *testing.T) {
 	s := openTestStore(t)
 
 	// Insert 4 rides across different months
-	s.InsertRide(parser.Ride{Filename: "mar15.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
-	s.InsertRide(parser.Ride{Filename: "feb10.gpx", RecordedAt: time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
-	s.InsertRide(parser.Ride{Filename: "jan25.gpx", RecordedAt: time.Date(2024, 1, 25, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
-	s.InsertRide(parser.Ride{Filename: "jan10.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if _, err := s.InsertRide(parser.Ride{Filename: "mar15.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"}); err != nil {
+		t.Fatalf("insert mar15: %v", err)
+	}
+	if _, err := s.InsertRide(parser.Ride{Filename: "feb10.gpx", RecordedAt: time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"}); err != nil {
+		t.Fatalf("insert feb10: %v", err)
+	}
+	if _, err := s.InsertRide(parser.Ride{Filename: "jan25.gpx", RecordedAt: time.Date(2024, 1, 25, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"}); err != nil {
+		t.Fatalf("insert jan25: %v", err)
+	}
+	if _, err := s.InsertRide(parser.Ride{Filename: "jan10.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"}); err != nil {
+		t.Fatalf("insert jan10: %v", err)
+	}
 
 	// Filter by January only
 	year, month := 2024, 1
