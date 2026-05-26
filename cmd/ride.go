@@ -15,18 +15,31 @@ import (
 var currentRideID int64
 
 var rideCmd = &cobra.Command{
-	Use:   "ride <id>",
+	Use:   "ride <position>",
 	Short: "Show summary stats for a specific ride",
 	Args:  cobra.ArbitraryArgs,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return fmt.Errorf("requires a ride ID")
+			return fmt.Errorf("requires a ride position")
 		}
-		id, err := strconv.ParseInt(args[0], 10, 64)
+		pos, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil {
-			return fmt.Errorf("invalid ride ID %q: must be a number", args[0])
+			return fmt.Errorf("invalid position %q: must be a number", args[0])
 		}
-		currentRideID = id
+		dbPath, err := store.DefaultPath()
+		if err != nil {
+			return err
+		}
+		s, err := store.Open(dbPath)
+		if err != nil {
+			return err
+		}
+		defer s.Close()
+		ride, err := s.GetRideByPosition(pos)
+		if err != nil {
+			return err
+		}
+		currentRideID = ride.ID
 		return nil
 	},
 	RunE: runRide,
