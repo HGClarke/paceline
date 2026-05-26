@@ -3,20 +3,21 @@ package parser
 import "time"
 
 type Ride struct {
-	ID             int64
-	Filename       string
-	RecordedAt     time.Time
-	DistanceM      float64
-	DurationS      int
-	ElevationGainM float64
-	AvgSpeedMPS    float64
-	MaxSpeedMPS    float64
-	AvgHRBPM       *int
-	MaxHRBPM       *int
-	AvgPowerW      *int
-	MaxPowerW      *int
-	Calories       *int
-	SourceFormat   string
+	ID             int64     `json:"-"`
+	Position       int64     `json:"id"`
+	Filename       string    `json:"filename"`
+	RecordedAt     time.Time `json:"recorded_at"`
+	DistanceM      float64   `json:"distance_m"`
+	DurationS      int       `json:"duration_s"`
+	ElevationGainM float64   `json:"elevation_gain_m"`
+	AvgSpeedMPS    float64   `json:"avg_speed_mps"`
+	MaxSpeedMPS    float64   `json:"max_speed_mps"`
+	AvgHRBPM       *int      `json:"avg_hr_bpm,omitempty"`
+	MaxHRBPM       *int      `json:"max_hr_bpm,omitempty"`
+	AvgPowerW      *int      `json:"avg_power_w,omitempty"`
+	MaxPowerW      *int      `json:"max_power_w,omitempty"`
+	Calories       *int      `json:"calories,omitempty"`
+	SourceFormat   string    `json:"source_format"`
 }
 
 type Stream struct {
