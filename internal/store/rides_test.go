@@ -454,3 +454,40 @@ func TestGetRideByPosition_PositionShiftOnMidInsert(t *testing.T) {
 		t.Errorf("after mid-insert: position 3 got ID %d, want %d (old)", got.ID, idOld)
 	}
 }
+
+func TestListRides_HasPositions(t *testing.T) {
+	s := openTestStore(t)
+
+	_, err := s.InsertRide(parser.Ride{Filename: "newest.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert newest: %v", err)
+	}
+	_, err = s.InsertRide(parser.Ride{Filename: "middle.gpx", RecordedAt: time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert middle: %v", err)
+	}
+	_, err = s.InsertRide(parser.Ride{Filename: "oldest.gpx", RecordedAt: time.Date(2024, 1, 5, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert oldest: %v", err)
+	}
+
+	rides, _, err := s.ListRides(store.RideFilters{Page: 1, Limit: 10})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+	if len(rides) != 3 {
+		t.Fatalf("expected 3 rides, got %d", len(rides))
+	}
+	if rides[0].Position != 1 {
+		t.Errorf("rides[0].Position = %d, want 1", rides[0].Position)
+	}
+	if rides[1].Position != 2 {
+		t.Errorf("rides[1].Position = %d, want 2", rides[1].Position)
+	}
+	if rides[2].Position != 3 {
+		t.Errorf("rides[2].Position = %d, want 3", rides[2].Position)
+	}
+	if rides[0].Filename != "newest.gpx" {
+		t.Errorf("rides[0].Filename = %q, want \"newest.gpx\"", rides[0].Filename)
+	}
+}

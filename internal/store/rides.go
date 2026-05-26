@@ -60,6 +60,8 @@ func (s *Store) GetRide(id int64) (parser.Ride, error) {
 }
 
 // ListRides returns filtered rides (most recent first) and the total count.
+// Each ride's Position reflects its global rank (1 = most recent) across all rides,
+// even when filters are applied.
 func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 	if f.Limit == 0 {
 		f.Limit = 10
@@ -78,11 +80,19 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 	offset := (f.Page - 1) * f.Limit
 	args = append(args, f.Limit, offset)
 	rows, err := s.db.Query(`
+		WITH ranked AS (
+			SELECT id, filename, recorded_at, distance_m, duration_s,
+				elevation_gain_m, avg_speed_mps, max_speed_mps,
+				avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
+				calories, source_format,
+				ROW_NUMBER() OVER (ORDER BY recorded_at DESC, id DESC) AS position
+			FROM rides
+		)
 		SELECT id, filename, recorded_at, distance_m, duration_s,
 			elevation_gain_m, avg_speed_mps, max_speed_mps,
 			avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
-			calories, source_format
-		FROM rides`+where+` ORDER BY recorded_at DESC LIMIT ? OFFSET ?`, args...)
+			calories, source_format, position
+		FROM ranked`+where+` ORDER BY recorded_at DESC, id DESC LIMIT ? OFFSET ?`, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list rides: %w", err)
 	}
@@ -90,7 +100,7 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 
 	rides := make([]parser.Ride, 0)
 	for rows.Next() {
-		r, err := scanRide(rows)
+		r, err := scanRankedRide(rows)
 		if err != nil {
 			return nil, 0, err
 		}
