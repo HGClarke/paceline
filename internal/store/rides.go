@@ -252,3 +252,66 @@ func scanRide(row rideScanner) (parser.Ride, error) {
 	}
 	return r, nil
 }
+
+// scanRankedRide is like scanRide but also scans the position column.
+// Use this with queries that include a ROW_NUMBER() position column.
+func scanRankedRide(row rideScanner) (parser.Ride, error) {
+	var r parser.Ride
+	var avgHR, maxHR, avgPower, maxPower, calories sql.NullInt64
+	err := row.Scan(
+		&r.ID, &r.Filename, &r.RecordedAt,
+		&r.DistanceM, &r.DurationS, &r.ElevationGainM,
+		&r.AvgSpeedMPS, &r.MaxSpeedMPS,
+		&avgHR, &maxHR, &avgPower, &maxPower, &calories,
+		&r.SourceFormat,
+		&r.Position,
+	)
+	if err != nil {
+		return r, fmt.Errorf("scan ride: %w", err)
+	}
+	if avgHR.Valid {
+		v := int(avgHR.Int64)
+		r.AvgHRBPM = &v
+	}
+	if maxHR.Valid {
+		v := int(maxHR.Int64)
+		r.MaxHRBPM = &v
+	}
+	if avgPower.Valid {
+		v := int(avgPower.Int64)
+		r.AvgPowerW = &v
+	}
+	if maxPower.Valid {
+		v := int(maxPower.Int64)
+		r.MaxPowerW = &v
+	}
+	if calories.Valid {
+		v := int(calories.Int64)
+		r.Calories = &v
+	}
+	return r, nil
+}
+
+// GetRideByPosition returns the ride at the given global position (1 = most recent).
+// Returns an error if the position is out of range.
+func (s *Store) GetRideByPosition(pos int64) (parser.Ride, error) {
+	row := s.db.QueryRow(`
+		WITH ranked AS (
+			SELECT id, filename, recorded_at, distance_m, duration_s,
+				elevation_gain_m, avg_speed_mps, max_speed_mps,
+				avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
+				calories, source_format,
+				ROW_NUMBER() OVER (ORDER BY recorded_at DESC, id DESC) AS position
+			FROM rides
+		)
+		SELECT id, filename, recorded_at, distance_m, duration_s,
+			elevation_gain_m, avg_speed_mps, max_speed_mps,
+			avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
+			calories, source_format, position
+		FROM ranked WHERE position = ?`, pos)
+	r, err := scanRankedRide(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return parser.Ride{}, fmt.Errorf("no ride at position %d — run 'paceline rides' to see available rides", pos)
+	}
+	return r, err
+}

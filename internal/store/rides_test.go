@@ -316,3 +316,141 @@ func TestGetStats_Empty(t *testing.T) {
 		t.Errorf("expected 0 elevation, got %v", stats.TotalElevationM)
 	}
 }
+
+func TestGetRideByPosition_HappyPath(t *testing.T) {
+	s := openTestStore(t)
+
+	idNewest, err := s.InsertRide(parser.Ride{
+		Filename:     "newest.gpx",
+		RecordedAt:   time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC),
+		SourceFormat: "gpx",
+	})
+	if err != nil {
+		t.Fatalf("insert newest: %v", err)
+	}
+	_, err = s.InsertRide(parser.Ride{
+		Filename:     "oldest.gpx",
+		RecordedAt:   time.Date(2024, 1, 5, 0, 0, 0, 0, time.UTC),
+		SourceFormat: "gpx",
+	})
+	if err != nil {
+		t.Fatalf("insert oldest: %v", err)
+	}
+
+	got, err := s.GetRideByPosition(1)
+	if err != nil {
+		t.Fatalf("GetRideByPosition(1): %v", err)
+	}
+	if got.ID != idNewest {
+		t.Errorf("position 1: got DB ID %d, want %d", got.ID, idNewest)
+	}
+	if got.Position != 1 {
+		t.Errorf("Position field: got %d, want 1", got.Position)
+	}
+}
+
+func TestGetRideByPosition_OutOfRange(t *testing.T) {
+	s := openTestStore(t)
+	_, err := s.InsertRide(parser.Ride{
+		Filename:     "only.gpx",
+		RecordedAt:   time.Now(),
+		SourceFormat: "gpx",
+	})
+	if err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+
+	_, err = s.GetRideByPosition(99)
+	if err == nil {
+		t.Fatal("expected error for out-of-range position, got nil")
+	}
+	if !strings.Contains(err.Error(), "position 99") {
+		t.Errorf("expected error to mention position 99, got: %v", err)
+	}
+}
+
+func TestGetRideByPosition_AfterDelete(t *testing.T) {
+	s := openTestStore(t)
+
+	idA, err := s.InsertRide(parser.Ride{Filename: "a.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert a: %v", err)
+	}
+	idB, err := s.InsertRide(parser.Ride{Filename: "b.gpx", RecordedAt: time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert b: %v", err)
+	}
+	idC, err := s.InsertRide(parser.Ride{Filename: "c.gpx", RecordedAt: time.Date(2024, 1, 5, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert c: %v", err)
+	}
+	_ = idA
+
+	// Before delete: position 2 is B
+	got, err := s.GetRideByPosition(2)
+	if err != nil {
+		t.Fatalf("GetRideByPosition(2) before delete: %v", err)
+	}
+	if got.ID != idB {
+		t.Errorf("before delete: position 2 got ID %d, want %d (B)", got.ID, idB)
+	}
+
+	if err := s.DeleteRide(idB); err != nil {
+		t.Fatalf("DeleteRide: %v", err)
+	}
+
+	// After delete: position 2 is now C
+	got, err = s.GetRideByPosition(2)
+	if err != nil {
+		t.Fatalf("GetRideByPosition(2) after delete: %v", err)
+	}
+	if got.ID != idC {
+		t.Errorf("after delete: position 2 got ID %d, want %d (C)", got.ID, idC)
+	}
+}
+
+func TestGetRideByPosition_PositionShiftOnMidInsert(t *testing.T) {
+	s := openTestStore(t)
+
+	idRecent, err := s.InsertRide(parser.Ride{Filename: "recent.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert recent: %v", err)
+	}
+	idOld, err := s.InsertRide(parser.Ride{Filename: "old.gpx", RecordedAt: time.Date(2024, 1, 5, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert old: %v", err)
+	}
+	_ = idRecent
+
+	// Before mid-insert: position 2 is old
+	got, err := s.GetRideByPosition(2)
+	if err != nil {
+		t.Fatalf("GetRideByPosition(2) before mid-insert: %v", err)
+	}
+	if got.ID != idOld {
+		t.Errorf("before mid-insert: position 2 got ID %d, want %d (old)", got.ID, idOld)
+	}
+
+	// Insert a ride whose date falls between the two
+	_, err = s.InsertRide(parser.Ride{Filename: "mid.gpx", RecordedAt: time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"})
+	if err != nil {
+		t.Fatalf("insert mid: %v", err)
+	}
+
+	// After mid-insert: position 2 is mid, position 3 is old
+	got, err = s.GetRideByPosition(2)
+	if err != nil {
+		t.Fatalf("GetRideByPosition(2) after mid-insert: %v", err)
+	}
+	if got.Filename != "mid.gpx" {
+		t.Errorf("after mid-insert: position 2 filename = %q, want \"mid.gpx\"", got.Filename)
+	}
+
+	got, err = s.GetRideByPosition(3)
+	if err != nil {
+		t.Fatalf("GetRideByPosition(3) after mid-insert: %v", err)
+	}
+	if got.ID != idOld {
+		t.Errorf("after mid-insert: position 3 got ID %d, want %d (old)", got.ID, idOld)
+	}
+}
