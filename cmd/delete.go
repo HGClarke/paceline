@@ -19,7 +19,7 @@ var deleteCmd = &cobra.Command{
 }
 
 var deleteRideCmd = &cobra.Command{
-	Use:   "ride <id>",
+	Use:   "ride <position>",
 	Short: "Delete a specific ride and its stream data",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runDeleteRide,
@@ -41,9 +41,9 @@ func init() {
 }
 
 func runDeleteRide(cmd *cobra.Command, args []string) error {
-	id, err := strconv.ParseInt(args[0], 10, 64)
+	pos, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		return fmt.Errorf("invalid ride ID %q: must be a number", args[0])
+		return fmt.Errorf("invalid position %q: must be a number", args[0])
 	}
 
 	dbPath, err := store.DefaultPath()
@@ -56,24 +56,24 @@ func runDeleteRide(cmd *cobra.Command, args []string) error {
 	}
 	defer s.Close()
 
-	ride, err := s.GetRide(id)
+	ride, err := s.GetRideByPosition(pos)
 	if err != nil {
 		return err
 	}
 
 	distanceKM := ride.DistanceM / 1000.0
 	prompt := fmt.Sprintf("Delete ride #%d (%s, %.1f km)?",
-		ride.ID, ride.RecordedAt.Format("2006-01-02"), distanceKM)
+		ride.Position, ride.RecordedAt.Format("2006-01-02"), distanceKM)
 
 	if !confirm(prompt, deleteForce) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	if err := s.DeleteRide(id); err != nil {
+	if err := s.DeleteRide(ride.ID); err != nil {
 		return err
 	}
-	fmt.Printf("Deleted ride #%d.\n", id)
+	fmt.Printf("Deleted ride #%d.\n", ride.Position)
 	return nil
 }
 
