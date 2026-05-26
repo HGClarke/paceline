@@ -483,11 +483,29 @@ Strava uses OAuth 2.0 with an authorization code flow. For a CLI tool, the stand
 **Rate limits**
 Strava enforces 100 requests per 15 minutes and 1,000 per day. Sync handles this with:
 - **Incremental fetches**: subsequent syncs only request activities after `last_sync_at`, keeping request counts small
-- **Exponential backoff**: on a 429 response, read `X-RateLimit-Reset` and wait before retrying
-- **Lazy stream fetching**: stream data is fetched per-ride on demand, not during bulk sync, spreading requests across sessions
+- **Rate-limit backoff**: on a 429 response, read `X-RateLimit-Reset` and sleep until the window resets, then continue — the user sees a paused progress bar, not a failure
+- **Lazy stream fetching**: stream data is fetched per-ride on demand, not during bulk sync, spreading requests across sessions. The activity list endpoint returns up to 200 activities per page (~5 requests for 1,000 activities); fetching streams costs 1 request per ride. Deferring streams keeps the initial sync well within rate limits.
 
-**Idempotency**
-A new nullable `strava_activity_id TEXT` column on `rides` carries the Strava activity ID. `ON CONFLICT (strava_activity_id) DO NOTHING` prevents duplicates. File-based rides (imported via `import`) have a `NULL` `strava_activity_id`; the two import paths coexist without conflict.
+**Idempotency and resumability**
+A new nullable `strava_activity_id TEXT UNIQUE` column on `rides` carries the Strava activity ID. Each activity is written to the DB immediately as it is fetched — not batched at the end. This makes the sync inherently resumable without any explicit checkpoint state: **the DB is the checkpoint**.
+
+If a sync is interrupted (network error, process killed, daily rate limit hit):
+1. On retry, re-fetch the Strava activity list (cheap — just IDs and summary fields, ~3–5 requests regardless of total count)
+2. Filter out activity IDs already present in the DB
+3. Fetch details only for the remainder
+
+The retry costs the same as completing the original sync — no duplicate API calls, no duplicate DB writes. `ON CONFLICT (strava_activity_id) DO NOTHING` ensures that even if an activity is sent twice, the insert is a no-op.
+
+The `last_sync_at` watermark serves a separate purpose: it optimises *subsequent incremental syncs* by passing `after=last_sync_at` to Strava so only new activities are fetched. It is only updated after a sync completes fully. An interrupted sync leaves the watermark unchanged, so the retry re-walks from the same starting point and relies on the DB-as-checkpoint to skip already-imported activities efficiently.
+
+| Scenario | Behaviour |
+|---|---|
+| Initial sync interrupted at activity 500/847 | Retry re-fetches list, skips 500 already stored, fetches remaining 347 |
+| Daily rate limit hit mid-sync | Wait until midnight UTC reset; retry resumes from where it stopped |
+| Incremental sync interrupted | `last_sync_at` not updated; retry re-fetches since the previous watermark, skips duplicates |
+| Activity imported twice (any cause) | Second insert is a no-op — no duplicate row created |
+
+File-based rides (imported via `import`) have a `NULL` `strava_activity_id`; the two import paths coexist without conflict.
 
 **Proposed commands**
 ```bash
@@ -517,11 +535,13 @@ paceline sync wahoo
 ```
 
 **Implementation notes**
-- Schema migration: add `strava_activity_id TEXT UNIQUE` column to `rides`; add `synced_at` column for incremental sync watermark
+- Schema migration: add `strava_activity_id TEXT UNIQUE` column to `rides`; add a `sync_state` table (or a row in a `meta` table) to store `last_sync_at` (Unix timestamp, updated only on full success)
+- Write each activity to the DB immediately on fetch — never accumulate in memory and batch-insert
 - OAuth token storage: `~/.paceline/strava-token.json` with `access_token`, `refresh_token`, `expires_at`
 - Strava pagination: `GET /v3/athlete/activities?after=<unix>&per_page=200&page=N` — iterate until empty page
+- On retry: query `SELECT strava_activity_id FROM rides WHERE strava_activity_id IS NOT NULL` into a set, then skip any fetched activity whose ID is already present before making the detail request
 - Field mapping: Strava's `moving_time` → `duration_s`, `distance` → `distance_m`, `total_elevation_gain` → `elevation_gain_m`, `average_watts` → `avg_power_w`, `average_heartrate` → `avg_hr_bpm`, etc.
-- Stream fetch: `GET /v3/activities/{id}/streams?keys=time,watts,heartrate,velocity_smooth,cadence,altitude`
+- Stream fetch: `GET /v3/activities/{id}/streams?keys=time,watts,heartrate,velocity_smooth,cadence,altitude` — deferred to first `ride <n> stream` call, cached in the `streams` table
 - Client ID / secret: `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` env vars (or future config entry)
 
 ---
