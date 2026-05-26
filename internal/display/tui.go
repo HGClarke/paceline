@@ -96,7 +96,7 @@ func (m ridesModel) View() string {
 	}
 	fmt.Fprintf(&sb, "Rides — Page %d of %d  (↑/↓ move, n/p page, enter select, q quit)\n\n", m.page, maxPage)
 
-	header := fmt.Sprintf("  %-4s  %-12s  %-10s  %-10s  %-10s\n", "ID", "Date", "Distance", "Duration", "Elevation")
+	header := fmt.Sprintf("  %-4s  %-12s  %-10s  %-10s  %-10s\n", "#", "Date", "Distance", "Duration", "Elevation")
 	sb.WriteString(header)
 	sb.WriteString(strings.Repeat("─", 60) + "\n")
 
@@ -107,7 +107,7 @@ func (m ridesModel) View() string {
 		}
 		fmt.Fprintf(&sb, "%s%-4d  %-12s  %-10s  %-10s  %-10s\n",
 			cursor,
-			r.ID,
+			r.Position,
 			r.RecordedAt.Format("2006-01-02"),
 			fmt.Sprintf("%.1f km", r.DistanceM/1000),
 			formatDuration(r.DurationS),

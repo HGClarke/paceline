@@ -1,7 +1,10 @@
 package display
 
 import (
+	"bytes"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/hollandclarke/paceline/internal/parser"
 )
@@ -63,5 +66,27 @@ func TestExtractFieldValues(t *testing.T) {
 				t.Errorf("extractFieldValues field=%q [%d]: got %v, want %v", tt.field, i, v, tt.want[i])
 			}
 		}
+	}
+}
+
+func TestPrintRideList_ShowsPositionColumn(t *testing.T) {
+	var buf bytes.Buffer
+	rides := []parser.Ride{
+		{
+			Position:       42,
+			RecordedAt:     time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC),
+			DistanceM:      30000,
+			DurationS:      3600,
+			ElevationGainM: 500,
+			AvgSpeedMPS:    8.3,
+		},
+	}
+	PrintRideList(&buf, rides, 1, 1, 10, false)
+	output := buf.String()
+	if !strings.Contains(output, "#") {
+		t.Errorf("expected '#' column header in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "42") {
+		t.Errorf("expected position '42' in output, got:\n%s", output)
 	}
 }

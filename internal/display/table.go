@@ -6,7 +6,6 @@ import (
 	"io"
 	"math"
 	"strconv"
-	"time"
 
 	"github.com/hollandclarke/paceline/internal/parser"
 	"github.com/hollandclarke/paceline/internal/store"
@@ -24,10 +23,10 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 	table.Options(tablewriter.WithBorders(tw.Border{
 		Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
 	}))
-	table.Header([]string{"ID", "Date", "Distance", "Duration", "Elevation", "Avg Speed"})
+	table.Header([]string{"#", "Date", "Distance", "Duration", "Elevation", "Avg Speed"})
 	for _, r := range rides {
 		table.Append([]string{
-			strconv.FormatInt(r.ID, 10),
+			strconv.FormatInt(r.Position, 10),
 			r.RecordedAt.Format("2006-01-02"),
 			fmt.Sprintf("%.1f km", r.DistanceM/1000),
 			formatDuration(r.DurationS),
@@ -58,7 +57,7 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool) {
 		tablewriter.WithRowAlignment(tw.AlignLeft),
 	)
 	rows := [][]string{
-		{"Date", r.RecordedAt.Format(time.RFC1123)},
+		{"Date", r.RecordedAt.Format("2006-01-02")},
 		{"Distance", fmt.Sprintf("%.2f km", r.DistanceM/1000)},
 		{"Duration", formatDuration(r.DurationS)},
 		{"Elevation Gain", fmt.Sprintf("%.0f m", r.ElevationGainM)},
