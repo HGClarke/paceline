@@ -217,19 +217,8 @@ type rideScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanRide(row rideScanner) (parser.Ride, error) {
-	var r parser.Ride
-	var avgHR, maxHR, avgPower, maxPower, calories sql.NullInt64
-	err := row.Scan(
-		&r.ID, &r.Filename, &r.RecordedAt,
-		&r.DistanceM, &r.DurationS, &r.ElevationGainM,
-		&r.AvgSpeedMPS, &r.MaxSpeedMPS,
-		&avgHR, &maxHR, &avgPower, &maxPower, &calories,
-		&r.SourceFormat,
-	)
-	if err != nil {
-		return r, fmt.Errorf("scan ride: %w", err)
-	}
+// applyNullableRideFields populates nullable sensor fields on r from the scanned sql.NullInt64 values.
+func applyNullableRideFields(r *parser.Ride, avgHR, maxHR, avgPower, maxPower, calories sql.NullInt64) {
 	if avgHR.Valid {
 		v := int(avgHR.Int64)
 		r.AvgHRBPM = &v
@@ -250,6 +239,22 @@ func scanRide(row rideScanner) (parser.Ride, error) {
 		v := int(calories.Int64)
 		r.Calories = &v
 	}
+}
+
+func scanRide(row rideScanner) (parser.Ride, error) {
+	var r parser.Ride
+	var avgHR, maxHR, avgPower, maxPower, calories sql.NullInt64
+	err := row.Scan(
+		&r.ID, &r.Filename, &r.RecordedAt,
+		&r.DistanceM, &r.DurationS, &r.ElevationGainM,
+		&r.AvgSpeedMPS, &r.MaxSpeedMPS,
+		&avgHR, &maxHR, &avgPower, &maxPower, &calories,
+		&r.SourceFormat,
+	)
+	if err != nil {
+		return r, fmt.Errorf("scan ride: %w", err)
+	}
+	applyNullableRideFields(&r, avgHR, maxHR, avgPower, maxPower, calories)
 	return r, nil
 }
 
@@ -269,26 +274,7 @@ func scanRankedRide(row rideScanner) (parser.Ride, error) {
 	if err != nil {
 		return r, fmt.Errorf("scan ride: %w", err)
 	}
-	if avgHR.Valid {
-		v := int(avgHR.Int64)
-		r.AvgHRBPM = &v
-	}
-	if maxHR.Valid {
-		v := int(maxHR.Int64)
-		r.MaxHRBPM = &v
-	}
-	if avgPower.Valid {
-		v := int(avgPower.Int64)
-		r.AvgPowerW = &v
-	}
-	if maxPower.Valid {
-		v := int(maxPower.Int64)
-		r.MaxPowerW = &v
-	}
-	if calories.Valid {
-		v := int(calories.Int64)
-		r.Calories = &v
-	}
+	applyNullableRideFields(&r, avgHR, maxHR, avgPower, maxPower, calories)
 	return r, nil
 }
 
