@@ -25,6 +25,11 @@ var rideCmd = &cobra.Command{
 	Short: "Show summary stats for a specific ride",
 	Args:  cobra.ArbitraryArgs,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Cobra does not chain PersistentPreRunE from parent when the child
+		// defines its own, so we call the root loader explicitly.
+		if err := loadCfg(); err != nil {
+			return err
+		}
 		if len(args) == 0 {
 			return fmt.Errorf("requires a ride position")
 		}
