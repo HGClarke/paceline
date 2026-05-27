@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hollandclarke/paceline/internal/config"
+	"github.com/HGClarke/paceline/internal/config"
 )
 
 func TestDefaultPath_EndsInConfigTOML(t *testing.T) {

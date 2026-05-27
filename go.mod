@@ -1,4 +1,4 @@
-module github.com/hollandclarke/paceline
+module github.com/HGClarke/paceline
 
 go 1.25.0
 

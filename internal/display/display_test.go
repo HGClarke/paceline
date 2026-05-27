@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hollandclarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/parser"
 )
 
 func TestFormatDuration(t *testing.T) {

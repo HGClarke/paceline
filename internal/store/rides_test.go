@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hollandclarke/paceline/internal/parser"
-	"github.com/hollandclarke/paceline/internal/store"
+	"github.com/HGClarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/store"
 )
 
 func openTestStore(t *testing.T) *store.Store {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hollandclarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/parser"
 )
 
 type RideFilters struct {

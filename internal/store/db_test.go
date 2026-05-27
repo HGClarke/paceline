@@ -3,7 +3,7 @@ package store_test
 import (
 	"testing"
 
-	"github.com/hollandclarke/paceline/internal/store"
+	"github.com/HGClarke/paceline/internal/store"
 )
 
 func TestOpen_CreatesSchema(t *testing.T) {

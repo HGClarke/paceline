@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/hollandclarke/paceline/internal/config"
+	"github.com/HGClarke/paceline/internal/config"
 	"github.com/spf13/cobra"
 )
 

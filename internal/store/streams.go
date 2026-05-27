@@ -3,7 +3,7 @@ package store
 import (
 	"fmt"
 
-	"github.com/hollandclarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/parser"
 )
 
 // InsertStreams bulk-inserts stream data points for a ride.

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hollandclarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/parser"
 )
 
 func TestParseFIT(t *testing.T) {

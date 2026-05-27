@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hollandclarke/paceline/internal/parser"
-	"github.com/hollandclarke/paceline/internal/store"
+	"github.com/HGClarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/store"
 )
 
 func insertTestRide(t *testing.T, s *store.Store, filename string) int64 {

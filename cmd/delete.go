@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hollandclarke/paceline/internal/display"
-	"github.com/hollandclarke/paceline/internal/store"
+	"github.com/HGClarke/paceline/internal/display"
+	"github.com/HGClarke/paceline/internal/store"
 	"github.com/spf13/cobra"
 )
 

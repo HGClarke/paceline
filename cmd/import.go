@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hollandclarke/paceline/internal/parser"
-	"github.com/hollandclarke/paceline/internal/store"
+	"github.com/HGClarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/store"
 	"github.com/spf13/cobra"
 )
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/hollandclarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/parser"
 	"golang.org/x/term"
 )
 

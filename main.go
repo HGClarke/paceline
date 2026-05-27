@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hollandclarke/paceline/cmd"
+	"github.com/HGClarke/paceline/cmd"
 )
 
 func main() {
