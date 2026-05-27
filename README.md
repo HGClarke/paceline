@@ -75,13 +75,13 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 **Requirements:** Go 1.21+
 
 ```bash
-go install github.com/hollandclarke/paceline@latest
+go install github.com/HGClarke/paceline@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/hollandclarke/paceline.git
+git clone https://github.com/HGClarke/paceline.git
 cd paceline
 go build -o paceline .
 ```
@@ -191,7 +191,7 @@ When `--field` is omitted, the field is auto-selected by priority: **power → h
 Show aggregated totals (ride count, distance, duration, elevation).
 
 ```bash
-paceline stats                  # current month (default)
+paceline stats                  # all-time totals (default)
 paceline stats --year=2025
 paceline stats --year=2025 --month=3
 paceline stats --year=2025 --week=12
