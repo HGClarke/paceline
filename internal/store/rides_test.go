@@ -221,6 +221,51 @@ func TestGetStats_FiltersByYearAndMonth(t *testing.T) {
 	}
 }
 
+func TestGetStats_AllTime(t *testing.T) {
+	s := openTestStore(t)
+
+	rides := []parser.Ride{
+		{
+			Filename:       "ride_2023.gpx",
+			RecordedAt:     time.Date(2023, 3, 10, 9, 0, 0, 0, time.UTC),
+			DistanceM:      20000,
+			DurationS:      2400,
+			ElevationGainM: 200,
+			SourceFormat:   "gpx",
+		},
+		{
+			Filename:       "ride_2025.gpx",
+			RecordedAt:     time.Date(2025, 6, 15, 10, 0, 0, 0, time.UTC),
+			DistanceM:      30000,
+			DurationS:      3600,
+			ElevationGainM: 400,
+			SourceFormat:   "gpx",
+		},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	stats, err := s.GetStats(store.StatsFilters{})
+	if err != nil {
+		t.Fatalf("GetStats all-time: %v", err)
+	}
+	if stats.RideCount != 2 {
+		t.Errorf("RideCount: got %d, want 2", stats.RideCount)
+	}
+	if stats.TotalDistanceM != 50000 {
+		t.Errorf("TotalDistanceM: got %v, want 50000", stats.TotalDistanceM)
+	}
+	if stats.TotalDurationS != 6000 {
+		t.Errorf("TotalDurationS: got %d, want 6000", stats.TotalDurationS)
+	}
+	if stats.TotalElevationM != 600 {
+		t.Errorf("TotalElevationM: got %v, want 600", stats.TotalElevationM)
+	}
+}
+
 func TestDeleteRide(t *testing.T) {
 	s := openTestStore(t)
 	rideID := insertTestRide(t, s, "delete_me.gpx")
