@@ -45,36 +45,29 @@ func runStats(cmd *cobra.Command, args []string) error {
 	f := store.StatsFilters{}
 
 	noFlags := statsYear == 0 && statsMonth == 0 && statsWeek == 0
-	if noFlags {
-		y, m := now.Year(), int(now.Month())
-		f.Year = &y
-		f.Month = &m
-	} else {
-		if statsYear != 0 {
-			f.Year = &statsYear
+
+	if statsYear != 0 {
+		f.Year = &statsYear
+	}
+	if statsMonth != 0 {
+		f.Month = &statsMonth
+		if f.Year == nil {
+			y := now.Year()
+			f.Year = &y
 		}
-		if statsMonth != 0 {
-			f.Month = &statsMonth
-			if f.Year == nil {
-				y := now.Year()
-				f.Year = &y
-			}
-		}
-		if statsWeek != 0 {
-			f.Week = &statsWeek
-			if f.Year == nil {
-				y := now.Year()
-				f.Year = &y
-			}
+	}
+	if statsWeek != 0 {
+		f.Week = &statsWeek
+		if f.Year == nil {
+			y := now.Year()
+			f.Year = &y
 		}
 	}
 
 	// Build human-readable label from the active filters.
-	// When no flags were given, always use "current month" regardless of the
-	// implicit year/month we injected into the filters.
 	var label string
 	if noFlags {
-		label = "current month"
+		label = "all time"
 	} else {
 		var labelParts []string
 		if f.Year != nil {
@@ -88,7 +81,7 @@ func runStats(cmd *cobra.Command, args []string) error {
 		}
 		label = strings.Join(labelParts, " ")
 		if label == "" {
-			label = "current month"
+			label = "all time"
 		}
 	}
 
