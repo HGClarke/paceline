@@ -23,3 +23,6 @@ coverage.html
 # Environment
 .env
 .env.local
+
+# Claude Code — local-only settings (contains machine-specific paths)
+.claude/settings.local.json
