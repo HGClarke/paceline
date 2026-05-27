@@ -1,0 +1,25 @@
+# Binary
+paceline
+
+# macOS
+.DS_Store
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Go test cache & coverage
+*.test
+*.out
+coverage.html
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
