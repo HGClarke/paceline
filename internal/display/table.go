@@ -116,3 +116,27 @@ func formatDuration(seconds int) string {
 	}
 	return fmt.Sprintf("%dm %02ds", m, s)
 }
+
+// formatDistance formats meters as "X.X km" (metric) or "X.X mi" (imperial).
+func formatDistance(m float64, units string) string {
+	if units == "imperial" {
+		return fmt.Sprintf("%.1f mi", m/1609.344)
+	}
+	return fmt.Sprintf("%.1f km", m/1000)
+}
+
+// formatSpeed formats m/s as "X.X km/h" (metric) or "X.X mph" (imperial).
+func formatSpeed(mps float64, units string) string {
+	if units == "imperial" {
+		return fmt.Sprintf("%.1f mph", mps*2.23694)
+	}
+	return fmt.Sprintf("%.1f km/h", mps*3.6)
+}
+
+// formatElevation formats meters as "X m" (metric) or "X ft" (imperial).
+func formatElevation(m float64, units string) string {
+	if units == "imperial" {
+		return fmt.Sprintf("%.0f ft", m*3.28084)
+	}
+	return fmt.Sprintf("%.0f m", m)
+}

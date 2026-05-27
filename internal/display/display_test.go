@@ -90,3 +90,67 @@ func TestPrintRideList_ShowsPositionColumn(t *testing.T) {
 		t.Errorf("expected position '42' in output, got:\n%s", output)
 	}
 }
+
+func TestFormatDistance_Metric(t *testing.T) {
+	tests := []struct {
+		m    float64
+		want string
+	}{
+		{1000, "1.0 km"},
+		{48280, "48.3 km"},
+		{0, "0.0 km"},
+	}
+	for _, tt := range tests {
+		got := formatDistance(tt.m, "metric")
+		if got != tt.want {
+			t.Errorf("formatDistance(%.0f, metric) = %q, want %q", tt.m, got, tt.want)
+		}
+	}
+}
+
+func TestFormatDistance_Imperial(t *testing.T) {
+	tests := []struct {
+		m    float64
+		want string
+	}{
+		{1609.344, "1.0 mi"},
+		{80467.2, "50.0 mi"},
+	}
+	for _, tt := range tests {
+		got := formatDistance(tt.m, "imperial")
+		if got != tt.want {
+			t.Errorf("formatDistance(%.3f, imperial) = %q, want %q", tt.m, got, tt.want)
+		}
+	}
+}
+
+func TestFormatSpeed_Metric(t *testing.T) {
+	// 10 m/s = 36 km/h
+	got := formatSpeed(10.0, "metric")
+	if got != "36.0 km/h" {
+		t.Errorf("formatSpeed(10, metric) = %q, want %q", got, "36.0 km/h")
+	}
+}
+
+func TestFormatSpeed_Imperial(t *testing.T) {
+	// 1 m/s = 2.23694 mph → round to 1dp = "2.2 mph"
+	got := formatSpeed(1.0, "imperial")
+	if got != "2.2 mph" {
+		t.Errorf("formatSpeed(1, imperial) = %q, want %q", got, "2.2 mph")
+	}
+}
+
+func TestFormatElevation_Metric(t *testing.T) {
+	got := formatElevation(1420.0, "metric")
+	if got != "1420 m" {
+		t.Errorf("formatElevation(1420, metric) = %q, want %q", got, "1420 m")
+	}
+}
+
+func TestFormatElevation_Imperial(t *testing.T) {
+	// 1 m = 3.28084 ft; 100 m = 328 ft
+	got := formatElevation(100.0, "imperial")
+	if got != "328 ft" {
+		t.Errorf("formatElevation(100, imperial) = %q, want %q", got, "328 ft")
+	}
+}
