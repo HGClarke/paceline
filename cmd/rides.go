@@ -77,7 +77,7 @@ func runRides(cmd *cobra.Command, args []string) error {
 	}
 
 	if display.IsTTY() && !jsonOutput {
-		selected, err := display.RunRidesTUI(os.Stdout, rides, total, ridesLimit, loadPage)
+		selected, err := display.RunRidesTUI(os.Stdout, rides, total, ridesLimit, loadPage, cfg.Units)
 		if err != nil {
 			return err
 		}

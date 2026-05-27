@@ -28,9 +28,9 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 		table.Append([]string{
 			strconv.FormatInt(r.Position, 10),
 			r.RecordedAt.Format("2006-01-02"),
-			formatDistance(r.DistanceM, units),
+			FormatDistance(r.DistanceM, units),
 			formatDuration(r.DurationS),
-			formatElevation(r.ElevationGainM, units),
+			FormatElevation(r.ElevationGainM, units),
 			formatSpeed(r.AvgSpeedMPS, units),
 		})
 	}
@@ -58,9 +58,9 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool, units string) {
 	)
 	rows := [][]string{
 		{"Date", r.RecordedAt.Format("2006-01-02")},
-		{"Distance", formatDistance(r.DistanceM, units)},
+		{"Distance", FormatDistance(r.DistanceM, units)},
 		{"Duration", formatDuration(r.DurationS)},
-		{"Elevation Gain", formatElevation(r.ElevationGainM, units)},
+		{"Elevation Gain", FormatElevation(r.ElevationGainM, units)},
 		{"Avg Speed", formatSpeed(r.AvgSpeedMPS, units)},
 		{"Max Speed", formatSpeed(r.MaxSpeedMPS, units)},
 		{"Format", r.SourceFormat},
@@ -100,9 +100,9 @@ func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units s
 	)
 	table.Bulk([][]string{
 		{"Rides", strconv.Itoa(st.RideCount)},
-		{"Total Distance", formatDistance(st.TotalDistanceM, units)},
+		{"Total Distance", FormatDistance(st.TotalDistanceM, units)},
 		{"Total Duration", formatDuration(st.TotalDurationS)},
-		{"Total Elevation", formatElevation(st.TotalElevationM, units)},
+		{"Total Elevation", FormatElevation(st.TotalElevationM, units)},
 	})
 	table.Render()
 }
@@ -117,8 +117,8 @@ func formatDuration(seconds int) string {
 	return fmt.Sprintf("%dm %02ds", m, s)
 }
 
-// formatDistance formats meters as "X.X km" (metric) or "X.X mi" (imperial).
-func formatDistance(m float64, units string) string {
+// FormatDistance formats meters as "X.X km" (metric) or "X.X mi" (imperial).
+func FormatDistance(m float64, units string) string {
 	if units == "imperial" {
 		return fmt.Sprintf("%.1f mi", m/1609.344)
 	}
@@ -133,8 +133,8 @@ func formatSpeed(mps float64, units string) string {
 	return fmt.Sprintf("%.1f km/h", mps*3.6)
 }
 
-// formatElevation formats meters as "X m" (metric) or "X ft" (imperial).
-func formatElevation(m float64, units string) string {
+// FormatElevation formats meters as "X m" (metric) or "X ft" (imperial).
+func FormatElevation(m float64, units string) string {
 	if units == "imperial" {
 		return fmt.Sprintf("%.0f ft", m*3.28084)
 	}

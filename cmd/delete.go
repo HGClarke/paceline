@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hollandclarke/paceline/internal/display"
 	"github.com/hollandclarke/paceline/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -61,9 +62,8 @@ func runDeleteRide(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	distanceKM := ride.DistanceM / 1000.0
-	prompt := fmt.Sprintf("Delete ride #%d (%s, %.1f km)?",
-		ride.Position, ride.RecordedAt.Format("2006-01-02"), distanceKM)
+	prompt := fmt.Sprintf("Delete ride #%d (%s, %s)?",
+		ride.Position, ride.RecordedAt.Format("2006-01-02"), display.FormatDistance(ride.DistanceM, cfg.Units))
 
 	if !confirm(prompt, deleteForce) {
 		fmt.Println("Cancelled.")

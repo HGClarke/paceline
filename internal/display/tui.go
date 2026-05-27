@@ -25,6 +25,7 @@ type ridesModel struct {
 	selected *parser.Ride
 	err      error
 	loadPage func(page int) ([]parser.Ride, int, error)
+	units    string
 }
 
 func (m ridesModel) Init() tea.Cmd { return nil }
@@ -109,9 +110,9 @@ func (m ridesModel) View() string {
 			cursor,
 			r.Position,
 			r.RecordedAt.Format("2006-01-02"),
-			fmt.Sprintf("%.1f km", r.DistanceM/1000),
+			FormatDistance(r.DistanceM, m.units),
 			formatDuration(r.DurationS),
-			fmt.Sprintf("%.0f m", r.ElevationGainM),
+			FormatElevation(r.ElevationGainM, m.units),
 		)
 	}
 	return sb.String()
@@ -120,13 +121,14 @@ func (m ridesModel) View() string {
 // RunRidesTUI launches the interactive rides list.
 // loadPage is called when the user navigates to a different page.
 // If the user selects a ride, the selected Ride is returned; otherwise nil.
-func RunRidesTUI(w io.Writer, initialRides []parser.Ride, total, limit int, loadPage func(page int) ([]parser.Ride, int, error)) (*parser.Ride, error) {
+func RunRidesTUI(w io.Writer, initialRides []parser.Ride, total, limit int, loadPage func(page int) ([]parser.Ride, int, error), units string) (*parser.Ride, error) {
 	m := ridesModel{
 		rides:    initialRides,
 		total:    total,
 		page:     1,
 		limit:    limit,
 		loadPage: loadPage,
+		units:    units,
 	}
 	p := tea.NewProgram(m, tea.WithOutput(w))
 	result, err := p.Run()
