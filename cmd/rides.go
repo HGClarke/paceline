@@ -82,11 +82,11 @@ func runRides(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if selected != nil {
-			display.PrintRideDetail(os.Stdout, *selected, false)
+			display.PrintRideDetail(os.Stdout, *selected, false, cfg.Units)
 		}
 		return nil
 	}
 
-	display.PrintRideList(os.Stdout, rides, total, ridesPage, ridesLimit, jsonOutput)
+	display.PrintRideList(os.Stdout, rides, total, ridesPage, ridesLimit, jsonOutput, cfg.Units)
 	return nil
 }

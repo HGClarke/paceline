@@ -14,9 +14,9 @@ import (
 )
 
 // PrintRideList renders a table of rides to w. If jsonOut is true, emits JSON instead.
-func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jsonOut bool) {
+func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(rides) // write error on stdout is unrecoverable
+		_ = json.NewEncoder(w).Encode(rides)
 		return
 	}
 	table := tablewriter.NewWriter(w)
@@ -28,10 +28,10 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 		table.Append([]string{
 			strconv.FormatInt(r.Position, 10),
 			r.RecordedAt.Format("2006-01-02"),
-			fmt.Sprintf("%.1f km", r.DistanceM/1000),
+			formatDistance(r.DistanceM, units),
 			formatDuration(r.DurationS),
-			fmt.Sprintf("%.0f m", r.ElevationGainM),
-			fmt.Sprintf("%.1f km/h", r.AvgSpeedMPS*3.6),
+			formatElevation(r.ElevationGainM, units),
+			formatSpeed(r.AvgSpeedMPS, units),
 		})
 	}
 	table.Render()
@@ -44,9 +44,9 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 }
 
 // PrintRideDetail renders a single ride's full summary to w.
-func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool) {
+func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(r) // write error on stdout is unrecoverable
+		_ = json.NewEncoder(w).Encode(r)
 		return
 	}
 	table := tablewriter.NewWriter(w)
@@ -58,11 +58,11 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool) {
 	)
 	rows := [][]string{
 		{"Date", r.RecordedAt.Format("2006-01-02")},
-		{"Distance", fmt.Sprintf("%.2f km", r.DistanceM/1000)},
+		{"Distance", formatDistance(r.DistanceM, units)},
 		{"Duration", formatDuration(r.DurationS)},
-		{"Elevation Gain", fmt.Sprintf("%.0f m", r.ElevationGainM)},
-		{"Avg Speed", fmt.Sprintf("%.1f km/h", r.AvgSpeedMPS*3.6)},
-		{"Max Speed", fmt.Sprintf("%.1f km/h", r.MaxSpeedMPS*3.6)},
+		{"Elevation Gain", formatElevation(r.ElevationGainM, units)},
+		{"Avg Speed", formatSpeed(r.AvgSpeedMPS, units)},
+		{"Max Speed", formatSpeed(r.MaxSpeedMPS, units)},
 		{"Format", r.SourceFormat},
 	}
 	if r.AvgHRBPM != nil {
@@ -85,9 +85,9 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool) {
 }
 
 // PrintStats renders aggregated stats to w.
-func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool) {
+func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(st) // write error on stdout is unrecoverable
+		_ = json.NewEncoder(w).Encode(st)
 		return
 	}
 	fmt.Fprintf(w, "Stats: %s\n\n", label)
@@ -100,9 +100,9 @@ func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool) {
 	)
 	table.Bulk([][]string{
 		{"Rides", strconv.Itoa(st.RideCount)},
-		{"Total Distance", fmt.Sprintf("%.1f km", st.TotalDistanceM/1000)},
+		{"Total Distance", formatDistance(st.TotalDistanceM, units)},
 		{"Total Duration", formatDuration(st.TotalDurationS)},
-		{"Total Elevation", fmt.Sprintf("%.0f m", st.TotalElevationM)},
+		{"Total Elevation", formatElevation(st.TotalElevationM, units)},
 	})
 	table.Render()
 }

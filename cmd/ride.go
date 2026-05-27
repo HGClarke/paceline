@@ -90,6 +90,6 @@ func runRide(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	display.PrintRideDetail(os.Stdout, currentRide, jsonOutput)
+	display.PrintRideDetail(os.Stdout, currentRide, jsonOutput, cfg.Units)
 	return nil
 }

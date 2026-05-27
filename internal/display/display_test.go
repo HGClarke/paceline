@@ -81,13 +81,41 @@ func TestPrintRideList_ShowsPositionColumn(t *testing.T) {
 			AvgSpeedMPS:    8.3,
 		},
 	}
-	PrintRideList(&buf, rides, 1, 1, 10, false)
+	PrintRideList(&buf, rides, 1, 1, 10, false, "metric")
 	output := buf.String()
 	if !strings.Contains(output, "#") {
 		t.Errorf("expected '#' column header in output, got:\n%s", output)
 	}
 	if !strings.Contains(output, "42") {
 		t.Errorf("expected position '42' in output, got:\n%s", output)
+	}
+}
+
+func TestPrintRideList_Imperial(t *testing.T) {
+	var buf bytes.Buffer
+	rides := []parser.Ride{
+		{
+			Position:       1,
+			RecordedAt:     time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC),
+			DistanceM:      16093.44, // exactly 10 miles
+			DurationS:      3600,
+			ElevationGainM: 304.8, // exactly 1000 ft
+			AvgSpeedMPS:    4.4704, // exactly 10 mph
+		},
+	}
+	PrintRideList(&buf, rides, 1, 1, 10, false, "imperial")
+	output := buf.String()
+	if !strings.Contains(output, "mi") {
+		t.Errorf("expected miles unit in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "mph") {
+		t.Errorf("expected mph unit in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "ft") {
+		t.Errorf("expected ft unit in output, got:\n%s", output)
+	}
+	if strings.Contains(output, " km") {
+		t.Errorf("expected no km in imperial output, got:\n%s", output)
 	}
 }
 

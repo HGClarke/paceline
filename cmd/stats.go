@@ -97,6 +97,6 @@ func runStats(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	display.PrintStats(os.Stdout, st, label, jsonOutput)
+	display.PrintStats(os.Stdout, st, label, jsonOutput, cfg.Units)
 	return nil
 }
