@@ -8,25 +8,26 @@
 
 ## Priority Matrix
 
-| # | Feature | Priority | Effort |
-|---|---------|----------|--------|
-| 1 | [Unit preferences (metric / imperial)](#1-unit-preferences-metric--imperial) | 🔴 High | Low |
-| 2 | [Personal records](#2-personal-records) | 🔴 High | Low |
-| 3 | [Date-range filtering](#3-date-range-filtering) | 🔴 High | Low |
-| 4 | [Ride sorting](#4-ride-sorting) | 🔴 High | Low |
-| 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium |
-| 6 | [Power curve](#6-power-curve) | 🟡 High | Medium |
-| 7 | [Ride naming & notes](#7-ride-naming--notes) | 🟡 High | Medium |
-| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium |
-| 9 | [HR zone analysis](#9-hr-zone-analysis) | 🟠 Medium | Medium |
-| 10 | [Streak & consistency tracking](#10-streak--consistency-tracking) | 🟠 Medium | Medium |
-| 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium |
-| 12 | [Multi-field stream overlay](#12-multi-field-stream-overlay) | 🟠 Medium | Medium |
-| 13 | [AI ride analysis](#13-ai-ride-analysis) | 🟠 Medium | Medium |
-| 14 | [Strava sync](#14-strava-sync) | 🟠 Medium | High |
-| 15 | [Route map in terminal](#15-route-map-in-terminal) | 🔵 Lower | High |
-| 16 | [FTP-based training metrics (NP / IF / TSS)](#16-ftp-based-training-metrics-np--if--tss) | 🔵 Lower | High |
-| 17 | [Watch folder / auto-import](#17-watch-folder--auto-import) | 🔵 Lower | High |
+| # | Feature | Priority | Effort | Status |
+|---|---------|----------|--------|--------|
+| 1 | [Unit preferences (metric / imperial)](#1-unit-preferences-metric--imperial) | 🔴 High | Low | ✅ Completed |
+| 2 | [Personal records](#2-personal-records) | 🔴 High | Low | ⬜ Not Started |
+| 3 | [Date-range filtering](#3-date-range-filtering) | 🔴 High | Low | ⬜ Not Started |
+| 4 | [Ride sorting](#4-ride-sorting) | 🔴 High | Low | ⬜ Not Started |
+| 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium | ⬜ Not Started |
+| 6 | [Power curve](#6-power-curve) | 🟡 High | Medium | ⬜ Not Started |
+| 7 | [Ride naming & notes](#7-ride-naming--notes) | 🟡 High | Medium | ⬜ Not Started |
+| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium | ✅ Completed |
+| 9 | [HR zone analysis](#9-hr-zone-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
+| 10 | [Streak & consistency tracking](#10-streak--consistency-tracking) | 🟠 Medium | Medium | ⬜ Not Started |
+| 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium | ⬜ Not Started |
+| 12 | [Multi-field stream overlay](#12-multi-field-stream-overlay) | 🟠 Medium | Medium | ⬜ Not Started |
+| 13 | [AI ride analysis](#13-ai-ride-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
+| 14 | [Strava sync](#14-strava-sync) | 🟠 Medium | High | ⬜ Not Started |
+| 15 | [Route map in terminal](#15-route-map-in-terminal) | 🔵 Lower | High | ⬜ Not Started |
+| 16 | [FTP-based training metrics (NP / IF / TSS)](#16-ftp-based-training-metrics-np--if--tss) | 🔵 Lower | High | ⬜ Not Started |
+| 17 | [Watch folder / auto-import](#17-watch-folder--auto-import) | 🔵 Lower | High | ⬜ Not Started |
+| 18 | [Homebrew installation](#18-homebrew-installation) | 🔵 Lower | Low | ⬜ Not Started |
 
 ---
 
@@ -634,6 +635,53 @@ paceline watch log
 
 ---
 
+### 18. Homebrew Installation
+
+**Description**
+Allow users to install Paceline via [Homebrew](https://brew.sh/) — the de facto package manager for macOS — with a single command:
+
+```bash
+brew install HGClarke/paceline/paceline
+```
+
+This requires two things: an automated release pipeline using [GoReleaser](https://goreleaser.com/) that cross-compiles binaries for macOS (arm64 and amd64) and Linux and uploads them as GitHub Release assets; and a [Homebrew tap](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap) — a separate public GitHub repository (`homebrew-paceline`) containing a Ruby formula file that GoReleaser auto-generates and pushes on each tagged release. The formula points Homebrew at the correct binary for the user's architecture and computes a SHA256 checksum for integrity.
+
+**Why it's impactful**
+`go install` requires Go to be installed and `~/go/bin` on PATH — two steps many non-developer cyclists will never complete. Homebrew removes both barriers: it handles PATH automatically and has no Go prerequisite. It's the installation path macOS users expect and trust. Adding it turns the install story from a developer workflow into a one-liner for any cyclist.
+
+**Effort estimate: Low**
+The majority of the work is configuration, not code:
+- `.goreleaser.yml` — ~30 lines of YAML configuring build targets, archive naming, and checksum generation
+- `.github/workflows/release.yml` — GitHub Actions workflow that runs GoReleaser on `git tag v*` pushes (~20 lines)
+- `homebrew-paceline` repo — a new public GitHub repository; GoReleaser auto-generates and pushes the formula file on each release, so no manual formula maintenance is needed after initial setup
+- One-time setup: create a GitHub personal access token scoped to the tap repo so GoReleaser can push the formula update
+
+Total estimated time: **2–4 hours** for initial setup; subsequent releases are fully automated.
+
+**Prerequisite**
+A tagged versioning convention (e.g. `v1.0.0`) and a version injection mechanism in the binary. The version should be injected at build time via ldflags:
+```bash
+go build -ldflags "-X github.com/HGClarke/paceline/cmd.version={{.Version}}" -o paceline .
+```
+This also unlocks a `paceline version` command as a natural side effect.
+
+**Proposed commands**
+```bash
+# One-time tap registration (only needed once per machine)
+brew tap HGClarke/paceline
+
+# Install
+brew install HGClarke/paceline/paceline
+
+# Upgrade to latest release
+brew upgrade paceline
+
+# Or in one shot (tap + install)
+brew install HGClarke/paceline/paceline
+```
+
+---
+
 ## Implementation Notes
 
 ### Config System (Prerequisite for Features 1, 9, 13, 16)
@@ -669,3 +717,4 @@ Given dependencies and quick wins:
 16. **FTP metrics** — needs config (ftp), stream computation
 17. **Route map** — GPS projection, standalone
 18. **Watch folder** — background daemon, most complex
+19. **Homebrew installation** — GoReleaser setup, tap repo, GitHub Actions release workflow
