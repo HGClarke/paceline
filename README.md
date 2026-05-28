@@ -275,18 +275,35 @@ The database is created automatically on first use. Original ride files are only
 
 ## Development
 
+### Prerequisites
+
+- **Go 1.21+**
+- **golangci-lint** (one-time install):
+  ```bash
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  ```
+  This installs the binary to `~/go/bin/`. Ensure that directory is on your `$PATH`, or the `Makefile` will fall back to the full path automatically.
+
+### Common commands
+
 ```bash
-# Build
-go build -o paceline .
+# Run all checks (vet + tests + lint) — the recommended pre-commit command
+make all
+
+# Build the binary
+make build
 
 # Run tests
-go test ./...
+make test
+
+# Lint only
+make lint
 
 # Run tests for a single package
 go test ./internal/parser/...
 
-# Vet
-go vet ./...
+# Run a single test by name
+go test ./internal/parser/... -run TestParseFIT
 ```
 
 Test data files live in `testdata/` (`sample.fit`, `sample.gpx`, `sample.tcx`).
