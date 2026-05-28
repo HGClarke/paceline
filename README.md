@@ -64,6 +64,7 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 - **Interactive TUI** — browse and paginate rides with a keyboard-driven interface (auto-detected when running in a terminal)
 - **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time
 - **Aggregated stats** — totals by month, week, or year
+- **Personal records** — all-time bests for distance, duration, elevation, speed, power, HR, and more
 - **Metric & imperial** — switch units with a single config command
 - **JSON output** — pipe any command with `--json` for scripting and integrations
 - **Fully local** — all data in `~/.paceline/data.db`; nothing leaves your machine
@@ -200,6 +201,22 @@ paceline stats --json
 
 ---
 
+### `paceline records`
+
+Show personal records (all-time bests across 9 categories).
+
+```bash
+paceline records                        # all-time records
+paceline records --year=2025            # records within 2025
+paceline records --year=2025 --month=6  # records within June 2025
+paceline records --year=2025 --week=12  # records within a specific ISO week
+paceline records --json
+```
+
+Categories: longest distance, longest duration, most elevation gain, highest avg power, highest avg speed, highest max speed, highest avg HR, most calories, highest altitude.
+
+---
+
 ### `paceline delete`
 
 Delete rides from the database.
@@ -232,7 +249,7 @@ Config is stored at `~/.paceline/config.toml`.
 
 | Flag | Description |
 |------|-------------|
-| `--json` | Output as JSON (works with `rides`, `ride`, `stats`) |
+| `--json` | Output as JSON (works with `rides`, `ride`, `stats`, `records`) |
 
 ---
 

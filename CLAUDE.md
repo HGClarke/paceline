@@ -26,6 +26,7 @@ go test ./...       # also works directly
 go test ./internal/parser/...
 go test ./internal/store/...
 go test ./internal/display/...
+go test ./internal/config/...
 
 # Run a single test by name
 go test ./internal/parser/... -run TestParseFIT
@@ -49,6 +50,7 @@ internal/
   parser/            → file format parsers → Ride + []Stream structs
   store/             → DuckDB persistence (rides + streams tables)
   display/           → rendering: tables, ASCII charts, bubbletea TUI
+  config/            → user config (TOML): Load, Save, DefaultPath
 ```
 
 ### Data flow
@@ -56,7 +58,7 @@ internal/
 1. **`parser`** — `ParseGPX`, `ParseTCX`, `ParseFIT` each return `(*parser.Ride, []parser.Stream, error)`. All optional sensor fields (HR, power, cadence) are `*int`/`*float64` (nil when absent).
 2. **`store`** — wraps a `*sql.DB` (DuckDB). `migrate()` runs DDL on open; import is idempotent (`ON CONFLICT (filename) DO NOTHING`). `Store.DefaultPath()` returns `~/.paceline/data.db`.
 3. **`display`** — three rendering paths selected at call site:
-   - `PrintRideList` / `PrintRideDetail` / `PrintStats` → `tablewriter` tables (or JSON when `--json` is set)
+   - `PrintRideList` / `PrintRideDetail` / `PrintStats` / `PrintRecords` → `tablewriter` tables (or JSON when `--json` is set)
    - `PrintStreamChart` → `asciigraph` ASCII line charts
    - `RunRidesTUI` → interactive `bubbletea` TUI (only when `display.IsTTY()` is true)
 
