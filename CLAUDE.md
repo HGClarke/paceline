@@ -5,14 +5,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
+# Install linter (one-time, adds to ~/go/bin/)
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
 # Build
-go build -o paceline .
+make build          # go build -o paceline .
+go build -o paceline .   # also works directly
 
 # Run without building
 go run . <command>
 
-# Run all tests
-go test ./...
+# Run all checks (vet + tests + lint)
+make all
+
+# Run tests
+make test           # go test ./...
+go test ./...       # also works directly
 
 # Run tests for a single package
 go test ./internal/parser/...
@@ -23,7 +31,11 @@ go test ./internal/display/...
 go test ./internal/parser/... -run TestParseFIT
 
 # Vet
-go vet ./...
+make vet            # go vet ./...
+go vet ./...        # also works directly
+
+# Lint
+make lint           # golangci-lint run ./...
 ```
 
 The compiled binary writes its database to `~/.paceline/data.db` (DuckDB). Test data files are in `testdata/` (sample.fit, sample.gpx, sample.tcx).
