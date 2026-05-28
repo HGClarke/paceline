@@ -64,6 +64,7 @@ func runRecords(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Build human-readable label from the active filters.
 	var label string
 	if noFlags {
 		label = "all time"
