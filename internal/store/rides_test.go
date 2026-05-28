@@ -580,3 +580,255 @@ func TestListRides_FilteredPositionsAreGlobal(t *testing.T) {
 		t.Errorf("rides[1] (jan10).Position = %d, want 4 (global rank)", rides[1].Position)
 	}
 }
+
+func TestGetRecords_Empty(t *testing.T) {
+	s := openTestStore(t)
+	recs, err := s.GetRecords(store.RecordsFilters{})
+	if err != nil {
+		t.Fatalf("GetRecords: %v", err)
+	}
+	if recs.LongestDistanceM != nil {
+		t.Error("expected nil LongestDistanceM")
+	}
+	if recs.LongestDurationS != nil {
+		t.Error("expected nil LongestDurationS")
+	}
+	if recs.MostElevationGainM != nil {
+		t.Error("expected nil MostElevationGainM")
+	}
+	if recs.HighestAvgPowerW != nil {
+		t.Error("expected nil HighestAvgPowerW")
+	}
+	if recs.HighestAvgSpeedMPS != nil {
+		t.Error("expected nil HighestAvgSpeedMPS")
+	}
+	if recs.HighestAvgHRBPM != nil {
+		t.Error("expected nil HighestAvgHRBPM")
+	}
+	if recs.HighestMaxSpeedMPS != nil {
+		t.Error("expected nil HighestMaxSpeedMPS")
+	}
+	if recs.MostCaloriesKcal != nil {
+		t.Error("expected nil MostCaloriesKcal")
+	}
+	if recs.HighestAltitudeM != nil {
+		t.Error("expected nil HighestAltitudeM")
+	}
+}
+
+func TestGetRecords_AllFields(t *testing.T) {
+	s := openTestStore(t)
+
+	hr, power, cal := 155, 250, 800
+	alt := 1200.0
+	rideDate := time.Date(2024, 6, 15, 10, 0, 0, 0, time.UTC)
+
+	id, err := s.InsertRide(parser.Ride{
+		Filename:       "full.gpx",
+		RecordedAt:     rideDate,
+		DistanceM:      50000,
+		DurationS:      7200,
+		ElevationGainM: 1500,
+		AvgSpeedMPS:    10.0,
+		MaxSpeedMPS:    20.0,
+		AvgHRBPM:       &hr,
+		MaxHRBPM:       &hr,
+		AvgPowerW:      &power,
+		MaxPowerW:      &power,
+		Calories:       &cal,
+		SourceFormat:   "gpx",
+	})
+	if err != nil {
+		t.Fatalf("InsertRide: %v", err)
+	}
+	if err := s.InsertStreams([]parser.Stream{
+		{RideID: id, Timestamp: rideDate, ElapsedS: 0, AltitudeM: &alt},
+	}); err != nil {
+		t.Fatalf("InsertStreams: %v", err)
+	}
+
+	recs, err := s.GetRecords(store.RecordsFilters{})
+	if err != nil {
+		t.Fatalf("GetRecords: %v", err)
+	}
+
+	check := func(name string, pr *store.PersonalRecord, wantVal float64) {
+		t.Helper()
+		if pr == nil {
+			t.Errorf("%s: got nil, want %v", name, wantVal)
+			return
+		}
+		if pr.RawValue != wantVal {
+			t.Errorf("%s.RawValue: got %v, want %v", name, pr.RawValue, wantVal)
+		}
+		if pr.Date.Format("2006-01-02") != "2024-06-15" {
+			t.Errorf("%s.Date: got %v, want 2024-06-15", name, pr.Date)
+		}
+	}
+
+	check("LongestDistanceM", recs.LongestDistanceM, 50000)
+	check("LongestDurationS", recs.LongestDurationS, 7200)
+	check("MostElevationGainM", recs.MostElevationGainM, 1500)
+	check("HighestAvgPowerW", recs.HighestAvgPowerW, 250)
+	check("HighestAvgSpeedMPS", recs.HighestAvgSpeedMPS, 10.0)
+	check("HighestAvgHRBPM", recs.HighestAvgHRBPM, 155)
+	check("HighestMaxSpeedMPS", recs.HighestMaxSpeedMPS, 20.0)
+	check("MostCaloriesKcal", recs.MostCaloriesKcal, 800)
+	check("HighestAltitudeM", recs.HighestAltitudeM, 1200)
+}
+
+func TestGetRecords_MissingNullable(t *testing.T) {
+	s := openTestStore(t)
+
+	// Insert a ride with no nullable fields and no stream data.
+	_, err := s.InsertRide(parser.Ride{
+		Filename:       "basic.gpx",
+		RecordedAt:     time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC),
+		DistanceM:      30000,
+		DurationS:      3600,
+		ElevationGainM: 500,
+		AvgSpeedMPS:    8.0,
+		MaxSpeedMPS:    15.0,
+		SourceFormat:   "gpx",
+	})
+	if err != nil {
+		t.Fatalf("InsertRide: %v", err)
+	}
+
+	recs, err := s.GetRecords(store.RecordsFilters{})
+	if err != nil {
+		t.Fatalf("GetRecords: %v", err)
+	}
+
+	// Non-nullable fields should be populated.
+	if recs.LongestDistanceM == nil {
+		t.Error("expected LongestDistanceM to be set")
+	}
+	if recs.LongestDurationS == nil {
+		t.Error("expected LongestDurationS to be set")
+	}
+	if recs.MostElevationGainM == nil {
+		t.Error("expected MostElevationGainM to be set")
+	}
+	if recs.HighestAvgSpeedMPS == nil {
+		t.Error("expected HighestAvgSpeedMPS to be set")
+	}
+	if recs.HighestMaxSpeedMPS == nil {
+		t.Error("expected HighestMaxSpeedMPS to be set")
+	}
+
+	// Nullable fields should be nil.
+	if recs.HighestAvgPowerW != nil {
+		t.Errorf("expected nil HighestAvgPowerW, got %+v", recs.HighestAvgPowerW)
+	}
+	if recs.HighestAvgHRBPM != nil {
+		t.Errorf("expected nil HighestAvgHRBPM, got %+v", recs.HighestAvgHRBPM)
+	}
+	if recs.MostCaloriesKcal != nil {
+		t.Errorf("expected nil MostCaloriesKcal, got %+v", recs.MostCaloriesKcal)
+	}
+	if recs.HighestAltitudeM != nil {
+		t.Errorf("expected nil HighestAltitudeM, got %+v", recs.HighestAltitudeM)
+	}
+}
+
+func TestGetRecords_YearFilter(t *testing.T) {
+	s := openTestStore(t)
+
+	// 2024 ride: farther
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "2024.gpx",
+		RecordedAt:   time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		DistanceM:    100000,
+		DurationS:    3600,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("insert 2024: %v", err)
+	}
+	// 2025 ride: shorter
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "2025.gpx",
+		RecordedAt:   time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
+		DistanceM:    30000,
+		DurationS:    1800,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("insert 2025: %v", err)
+	}
+
+	year := 2025
+	recs, err := s.GetRecords(store.RecordsFilters{Year: &year})
+	if err != nil {
+		t.Fatalf("GetRecords: %v", err)
+	}
+	if recs.LongestDistanceM == nil {
+		t.Fatal("expected LongestDistanceM to be set")
+	}
+	if recs.LongestDistanceM.RawValue != 30000 {
+		t.Errorf("LongestDistanceM: got %v, want 30000", recs.LongestDistanceM.RawValue)
+	}
+	if recs.LongestDistanceM.Date.Year() != 2025 {
+		t.Errorf("LongestDistanceM.Date.Year: got %d, want 2025", recs.LongestDistanceM.Date.Year())
+	}
+}
+
+func TestGetRecords_PicksMax(t *testing.T) {
+	s := openTestStore(t)
+
+	dateA := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
+	dateB := time.Date(2024, 3, 20, 0, 0, 0, 0, time.UTC)
+
+	// Ride A: longer distance, slower speed.
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:       "ride_a.gpx",
+		RecordedAt:     dateA,
+		DistanceM:      100000,
+		DurationS:      3600,
+		ElevationGainM: 500,
+		AvgSpeedMPS:    5.0,
+		MaxSpeedMPS:    10.0,
+		SourceFormat:   "gpx",
+	}); err != nil {
+		t.Fatalf("insert ride A: %v", err)
+	}
+	// Ride B: shorter distance, faster speed.
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:       "ride_b.gpx",
+		RecordedAt:     dateB,
+		DistanceM:      50000,
+		DurationS:      7200,
+		ElevationGainM: 200,
+		AvgSpeedMPS:    20.0,
+		MaxSpeedMPS:    40.0,
+		SourceFormat:   "gpx",
+	}); err != nil {
+		t.Fatalf("insert ride B: %v", err)
+	}
+
+	recs, err := s.GetRecords(store.RecordsFilters{})
+	if err != nil {
+		t.Fatalf("GetRecords: %v", err)
+	}
+
+	// Distance record must come from ride A.
+	if recs.LongestDistanceM == nil {
+		t.Fatal("expected LongestDistanceM to be set")
+	}
+	if recs.LongestDistanceM.RawValue != 100000 {
+		t.Errorf("LongestDistanceM: got %v, want 100000", recs.LongestDistanceM.RawValue)
+	}
+	if !recs.LongestDistanceM.Date.Equal(dateA) {
+		t.Errorf("LongestDistanceM.Date: got %v, want %v", recs.LongestDistanceM.Date, dateA)
+	}
+
+	// Speed record must come from ride B.
+	if recs.HighestAvgSpeedMPS == nil {
+		t.Fatal("expected HighestAvgSpeedMPS to be set")
+	}
+	if recs.HighestAvgSpeedMPS.RawValue != 20.0 {
+		t.Errorf("HighestAvgSpeedMPS: got %v, want 20.0", recs.HighestAvgSpeedMPS.RawValue)
+	}
+	if !recs.HighestAvgSpeedMPS.Date.Equal(dateB) {
+		t.Errorf("HighestAvgSpeedMPS.Date: got %v, want %v", recs.HighestAvgSpeedMPS.Date, dateB)
+	}
+}
