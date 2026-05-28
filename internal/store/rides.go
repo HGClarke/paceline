@@ -112,7 +112,7 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 	return rides, total, nil
 }
 
-func buildRideWhere(f RideFilters) (string, []any) {
+func buildRideWhere(f RideFilters) (string, []any) { //nolint:gocritic // unnamedResult: intentional, named returns add noise here
 	var clauses []string
 	var args []any
 
@@ -165,7 +165,7 @@ func (s *Store) GetStats(f StatsFilters) (Stats, error) {
 	return st, nil
 }
 
-func buildStatsWhere(f StatsFilters) (string, []any) {
+func buildStatsWhere(f StatsFilters) (string, []any) { //nolint:gocritic // unnamedResult: intentional, named returns add noise here
 	var clauses []string
 	var args []any
 
@@ -253,7 +253,7 @@ func (s *Store) GetRecords(f RecordsFilters) (Records, error) {
 }
 
 // buildRecordsWhere builds a WHERE clause for RecordsFilters against the rides table.
-func buildRecordsWhere(f RecordsFilters) (string, []any) {
+func buildRecordsWhere(f RecordsFilters) (string, []any) { //nolint:gocritic // unnamedResult: intentional, named returns add noise here
 	var clauses []string
 	var args []any
 

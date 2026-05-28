@@ -117,7 +117,7 @@ func ParseTCX(filename string, data []byte) (*Ride, []Stream, error) {
 		ride.MaxHRBPM = &maxHR
 	}
 
-	var streams []Stream
+	streams := make([]Stream, 0, len(allPoints))
 	for _, pt := range allPoints {
 		t, err := time.Parse(time.RFC3339, pt.Time)
 		if err != nil {

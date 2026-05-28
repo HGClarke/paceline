@@ -20,12 +20,12 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 		return
 	}
 	table := tablewriter.NewWriter(w)
-	table.Options(tablewriter.WithBorders(tw.Border{
+	table.Options(tablewriter.WithBorders(tw.Border{ //nolint:staticcheck // SA1019: WithBorders deprecated but replacement API not yet stable
 		Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
 	}))
 	table.Header([]string{"#", "Date", "Distance", "Duration", "Elevation", "Avg Speed"})
 	for _, r := range rides {
-		table.Append([]string{
+		_ = table.Append([]string{ // write errors are unrecoverable; discard return value
 			strconv.FormatInt(r.Position, 10),
 			r.RecordedAt.Format("2006-01-02"),
 			FormatDistance(r.DistanceM, units),
@@ -34,7 +34,7 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 			formatSpeed(r.AvgSpeedMPS, units),
 		})
 	}
-	table.Render()
+	_ = table.Render() // write errors are unrecoverable; discard return value
 	if limit > 0 {
 		pages := int(math.Ceil(float64(total) / float64(limit)))
 		if pages > 1 {
@@ -51,7 +51,7 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool, units string) {
 	}
 	table := tablewriter.NewWriter(w)
 	table.Options(
-		tablewriter.WithBorders(tw.Border{
+		tablewriter.WithBorders(tw.Border{ //nolint:staticcheck // SA1019: WithBorders deprecated but replacement API not yet stable
 			Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
 		}),
 		tablewriter.WithRowAlignment(tw.AlignLeft),
@@ -80,8 +80,8 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool, units string) {
 	if r.Calories != nil {
 		rows = append(rows, []string{"Calories", strconv.Itoa(*r.Calories)})
 	}
-	table.Bulk(rows)
-	table.Render()
+	_ = table.Bulk(rows) // write errors are unrecoverable; discard return value
+	_ = table.Render()   // write errors are unrecoverable; discard return value
 }
 
 // PrintStats renders aggregated stats to w.
@@ -93,18 +93,18 @@ func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units s
 	fmt.Fprintf(w, "Stats: %s\n\n", label)
 	table := tablewriter.NewWriter(w)
 	table.Options(
-		tablewriter.WithBorders(tw.Border{
+		tablewriter.WithBorders(tw.Border{ //nolint:staticcheck // SA1019: WithBorders deprecated but replacement API not yet stable
 			Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
 		}),
 		tablewriter.WithRowAlignment(tw.AlignLeft),
 	)
-	table.Bulk([][]string{
+	_ = table.Bulk([][]string{ // write errors are unrecoverable; discard return value
 		{"Rides", strconv.Itoa(st.RideCount)},
 		{"Total Distance", FormatDistance(st.TotalDistanceM, units)},
 		{"Total Duration", formatDuration(st.TotalDurationS)},
 		{"Total Elevation", FormatElevation(st.TotalElevationM, units)},
 	})
-	table.Render()
+	_ = table.Render() // write errors are unrecoverable; discard return value
 }
 
 // PrintRecords renders personal records to w. Nil fields in recs are omitted entirely.
@@ -172,7 +172,7 @@ func PrintRecords(w io.Writer, recs store.Records, label string, jsonOut bool, u
 		},
 	}
 
-	var tableRows [][]string
+	tableRows := make([][]string, 0, len(rows))
 	for _, r := range rows {
 		if r.pr == nil {
 			continue
@@ -195,16 +195,16 @@ func PrintRecords(w io.Writer, recs store.Records, label string, jsonOut bool, u
 
 	table := tablewriter.NewWriter(w)
 	table.Options(
-		tablewriter.WithBorders(tw.Border{
+		tablewriter.WithBorders(tw.Border{ //nolint:staticcheck // SA1019: WithBorders deprecated but replacement API not yet stable
 			Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
 		}),
 		tablewriter.WithRowAlignment(tw.AlignLeft),
 	)
 	table.Header([]string{"Record", "Value", "Date"})
 	for _, r := range tableRows {
-		table.Append(r)
+		_ = table.Append(r) // write errors are unrecoverable; discard return value
 	}
-	table.Render()
+	_ = table.Render() // write errors are unrecoverable; discard return value
 }
 
 func formatDuration(seconds int) string {

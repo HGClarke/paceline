@@ -31,9 +31,8 @@ type ridesModel struct {
 func (m ridesModel) Init() tea.Cmd { return nil }
 
 func (m ridesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		switch key.String() {
 		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
 		case "up", "k":

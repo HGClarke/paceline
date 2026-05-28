@@ -30,7 +30,7 @@ func ParseGPX(filename string, data []byte) (*Ride, []Stream, error) {
 		SourceFormat: "gpx",
 	}
 
-	var streams []Stream
+	streams := make([]Stream, 0, len(points))
 	var totalDist, totalElevGain, sumSpeed float64
 	var maxSpeed float64
 	start := points[0].Timestamp

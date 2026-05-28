@@ -38,12 +38,12 @@ func init() {
 
 func runConfig(cmd *cobra.Command, args []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.Options(tablewriter.WithBorders(tw.Border{
+	table.Options(tablewriter.WithBorders(tw.Border{ //nolint:staticcheck // SA1019: WithBorders deprecated but replacement API not yet stable
 		Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
 	}))
 	table.Header([]string{"Key", "Value"})
-	table.Append([]string{"units", cfg.Units})
-	table.Render()
+	_ = table.Append([]string{"units", cfg.Units}) // write errors are unrecoverable; discard return value
+	_ = table.Render()                              // write errors are unrecoverable; discard return value
 	return nil
 }
 

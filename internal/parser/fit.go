@@ -75,7 +75,7 @@ func ParseFIT(filename string, data []byte) (*Ride, []Stream, error) {
 
 	// Build stream points from Records
 	start := sess.StartTime
-	var streams []Stream
+	streams := make([]Stream, 0, len(activity.Records))
 	for _, rec := range activity.Records {
 		elapsed := int(rec.Timestamp.Sub(start).Seconds())
 

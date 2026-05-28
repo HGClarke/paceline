@@ -15,7 +15,7 @@ func (s *Store) InsertStreams(streams []parser.Stream) error {
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck // deferred rollback; commit supersedes it on success
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO streams (ride_id, timestamp, elapsed_s, speed_mps, hr_bpm,
