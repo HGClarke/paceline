@@ -194,7 +194,9 @@ paceline stats --from 2025-01-01 --to 2025-03-31  # (once #3 lands)
 ### 6. Power Curve
 
 **Description**
-A power curve (also called a "mean maximal power" curve) shows the highest average power a rider sustained for each duration: 5 seconds, 1 minute, 5 minutes, 20 minutes, 60 minutes, etc. It is calculated by sliding a window of each duration across the stream data and finding the maximum average. DuckDB's window functions (`AVG(...) OVER (...)`) make this query tractable. The result is displayed as a table of duration → peak power values followed by an ASCII line chart — the same `asciigraph` renderer used by `ride <id> stream` — plotting the characteristic downward curve from sprint peak to sustained power.
+A power curve (also called a "mean maximal power" curve) shows the highest average power a rider sustained for each duration: 5 seconds, 1 minute, 5 minutes, 20 minutes, 60 minutes, etc. It is calculated by sliding a window of each duration across the stream data and finding the maximum average. DuckDB's window functions (`AVG(...) OVER (...)`) make this query tractable. The result is displayed as a table of canonical duration → peak power values followed by an ASCII line chart using the same `asciigraph` renderer as `ride <id> stream`.
+
+**Chart rendering note:** the table shows only the 7 canonical intervals, but the chart must be computed at 40–60 logarithmically-spaced durations across the full ride length (not just the 7 table rows). `asciigraph` draws one character column per data point — with only 7 points the chart looks like a staircase of straight-line drops, not a curve. Sampling at ~50 log-spaced durations gives the renderer enough resolution to produce the characteristic smooth exponential decline. The `Width` option stretches the series to fill terminal width, and a custom `XAxisValueFormatter` maps the dense duration values back to human-readable labels (5s, 30s, 1m, 5m, 20m, 60m) at the standard tick positions.
 
 This is the signature analytical feature for any cyclist with a power meter, and the primary reason serious cyclists use platforms like TrainingPeaks, WKO, or Intervals.icu.
 
@@ -221,15 +223,19 @@ paceline ride 42 power-curve
 # └──────────┴─────────┘
 #
 # 812 ┤╮
-# 730 ┤╰─╮
-# 649 ┤  ╰──╮
-# 567 ┤     ╰───╮
-# 486 ┤         ╰────╮
-# 404 ┤              ╰─────╮
-# 323 ┤                    ╰──────╮
-# 261 ┤                           ╰
-#      5s  30s  1m  5m  10m  20m  60m
-#               power curve
+# 754 ┤╰╮
+# 695 ┤ ╰─╮
+# 637 ┤   ╰╮
+# 579 ┤    ╰─╮
+# 521 ┤      ╰──╮
+# 463 ┤         ╰──╮
+# 404 ┤            ╰───╮
+# 346 ┤                ╰────╮
+# 288 ┤                     ╰──────╮
+# 261 ┤                            ╰─────
+#      5s  30s  1m       5m    10m  20m  60m
+#                    power curve
+# (rendered from ~50 log-spaced samples, not just the 7 table rows)
 
 # All-time best power curve across all rides
 paceline records power-curve
