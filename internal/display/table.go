@@ -107,6 +107,106 @@ func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units s
 	table.Render()
 }
 
+// PrintRecords renders personal records to w. Nil fields in recs are omitted entirely.
+// If all fields are nil, a message is printed instead of an empty table.
+// If jsonOut is true, recs is serialised as JSON (nil fields appear as null).
+func PrintRecords(w io.Writer, recs store.Records, label string, jsonOut bool, units string) {
+	if jsonOut {
+		_ = json.NewEncoder(w).Encode(recs)
+		return
+	}
+
+	fmt.Fprintf(w, "Personal Records: %s\n\n", label)
+
+	type recordRow struct {
+		name   string
+		pr     *store.PersonalRecord
+		format func(v float64) string
+	}
+
+	rows := []recordRow{
+		{
+			name:   "Longest distance",
+			pr:     recs.LongestDistanceM,
+			format: func(v float64) string { return FormatDistance(v, units) },
+		},
+		{
+			name:   "Longest duration",
+			pr:     recs.LongestDurationS,
+			format: func(v float64) string { return formatDuration(int(v)) },
+		},
+		{
+			name:   "Most elevation gain",
+			pr:     recs.MostElevationGainM,
+			format: func(v float64) string { return FormatElevation(v, units) },
+		},
+		{
+			name:   "Highest avg power",
+			pr:     recs.HighestAvgPowerW,
+			format: func(v float64) string { return fmt.Sprintf("%d W", int(v)) },
+		},
+		{
+			name:   "Highest avg speed",
+			pr:     recs.HighestAvgSpeedMPS,
+			format: func(v float64) string { return formatSpeed(v, units) },
+		},
+		{
+			name:   "Highest avg HR",
+			pr:     recs.HighestAvgHRBPM,
+			format: func(v float64) string { return fmt.Sprintf("%d bpm", int(v)) },
+		},
+		{
+			name:   "Highest max speed",
+			pr:     recs.HighestMaxSpeedMPS,
+			format: func(v float64) string { return formatSpeed(v, units) },
+		},
+		{
+			name:   "Most calories",
+			pr:     recs.MostCaloriesKcal,
+			format: func(v float64) string { return strconv.Itoa(int(v)) },
+		},
+		{
+			name:   "Highest altitude",
+			pr:     recs.HighestAltitudeM,
+			format: func(v float64) string { return FormatElevation(v, units) },
+		},
+	}
+
+	var tableRows [][]string
+	for _, r := range rows {
+		if r.pr == nil {
+			continue
+		}
+		tableRows = append(tableRows, []string{
+			r.name,
+			r.format(r.pr.RawValue),
+			r.pr.Date.Format("2006-01-02"),
+		})
+	}
+
+	if len(tableRows) == 0 {
+		if label == "all time" {
+			fmt.Fprintln(w, "No rides imported yet — run 'paceline import <file>' to get started.")
+		} else {
+			fmt.Fprintln(w, "No rides found for the selected period.")
+		}
+		return
+	}
+
+	table := tablewriter.NewWriter(w)
+	table.Options(
+		tablewriter.WithBorders(tw.Border{
+			Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
+		}),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+	)
+	table.Header([]string{"Record", "Value", "Date"})
+	for _, r := range tableRows {
+		table.Append(r)
+	}
+	table.Render()
+}
+
 func formatDuration(seconds int) string {
 	h := seconds / 3600
 	m := (seconds % 3600) / 60

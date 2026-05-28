@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/HGClarke/paceline/internal/parser"
+	"github.com/HGClarke/paceline/internal/store"
 )
 
 func TestFormatDuration(t *testing.T) {
@@ -180,5 +181,109 @@ func TestFormatElevation_Imperial(t *testing.T) {
 	got := FormatElevation(100.0, "imperial")
 	if got != "328 ft" {
 		t.Errorf("FormatElevation(100, imperial) = %q, want %q", got, "328 ft")
+	}
+}
+
+func TestPrintRecords_FullTable(t *testing.T) {
+	var buf bytes.Buffer
+	date := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
+	pr := func(v float64) *store.PersonalRecord {
+		return &store.PersonalRecord{RawValue: v, Date: date}
+	}
+	recs := store.Records{
+		LongestDistanceM:   pr(50000),
+		LongestDurationS:   pr(7200),
+		MostElevationGainM: pr(1500),
+		HighestAvgPowerW:   pr(250),
+		HighestAvgSpeedMPS: pr(10.0),
+		HighestAvgHRBPM:    pr(155),
+		HighestMaxSpeedMPS: pr(20.0),
+		MostCaloriesKcal:   pr(800),
+		HighestAltitudeM:   pr(1200),
+	}
+	PrintRecords(&buf, recs, "all time", false, "metric")
+	output := buf.String()
+
+	for _, want := range []string{
+		"Longest distance", "50.0 km", "2024-06-15",
+		"Longest duration", "2h 00m 00s",
+		"Most elevation gain", "1500 m",
+		"Highest avg power", "250 W",
+		"Highest avg speed", "36.0 km/h",
+		"Highest avg HR", "155 bpm",
+		"Highest max speed", "72.0 km/h",
+		"Most calories", "800",
+		"Highest altitude", "1200 m",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, output)
+		}
+	}
+}
+
+func TestPrintRecords_PartialTable(t *testing.T) {
+	var buf bytes.Buffer
+	date := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
+	pr := func(v float64) *store.PersonalRecord {
+		return &store.PersonalRecord{RawValue: v, Date: date}
+	}
+	recs := store.Records{
+		LongestDistanceM:   pr(50000),
+		LongestDurationS:   pr(7200),
+		MostElevationGainM: pr(1500),
+		HighestAvgPowerW:   nil, // no power data
+		HighestAvgSpeedMPS: pr(10.0),
+		HighestAvgHRBPM:    nil, // no HR data
+		HighestMaxSpeedMPS: pr(20.0),
+		MostCaloriesKcal:   nil, // no calorie data
+		HighestAltitudeM:   nil, // no stream altitude data
+	}
+	PrintRecords(&buf, recs, "all time", false, "metric")
+	output := buf.String()
+
+	if !strings.Contains(output, "Longest distance") {
+		t.Errorf("expected 'Longest distance' in output, got:\n%s", output)
+	}
+	for _, absent := range []string{"Highest avg power", "Highest avg HR", "Most calories", "Highest altitude"} {
+		if strings.Contains(output, absent) {
+			t.Errorf("expected %q to be absent from output:\n%s", absent, output)
+		}
+	}
+}
+
+func TestPrintRecords_EmptyDB(t *testing.T) {
+	var buf bytes.Buffer
+	PrintRecords(&buf, store.Records{}, "all time", false, "metric")
+	output := buf.String()
+	if !strings.Contains(output, "No rides imported yet") {
+		t.Errorf("expected empty-DB message, got:\n%s", output)
+	}
+}
+
+func TestPrintRecords_EmptyFilter(t *testing.T) {
+	var buf bytes.Buffer
+	PrintRecords(&buf, store.Records{}, "2099", false, "metric")
+	output := buf.String()
+	if !strings.Contains(output, "No rides found for the selected period") {
+		t.Errorf("expected period message, got:\n%s", output)
+	}
+}
+
+func TestPrintRecords_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	date := time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)
+	recs := store.Records{
+		LongestDistanceM: &store.PersonalRecord{RawValue: 50000, Date: date},
+	}
+	PrintRecords(&buf, recs, "all time", true, "metric")
+	output := buf.String()
+	if !strings.Contains(output, `"longest_distance_m"`) {
+		t.Errorf("expected JSON key 'longest_distance_m', got:\n%s", output)
+	}
+	if !strings.Contains(output, "50000") {
+		t.Errorf("expected value 50000 in JSON, got:\n%s", output)
+	}
+	if !strings.Contains(output, "null") {
+		t.Errorf("expected null fields in JSON for absent records, got:\n%s", output)
 	}
 }
