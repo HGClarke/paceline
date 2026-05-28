@@ -194,7 +194,7 @@ paceline stats --from 2025-01-01 --to 2025-03-31  # (once #3 lands)
 ### 6. Power Curve
 
 **Description**
-A power curve (also called a "mean maximal power" curve) shows the highest average power a rider sustained for each duration: 5 seconds, 1 minute, 5 minutes, 20 minutes, 60 minutes, etc. It is calculated by sliding a window of each duration across the stream data and finding the maximum average. DuckDB's window functions (`AVG(...) OVER (...)`) make this query tractable. The result is visualized as a table or ASCII chart.
+A power curve (also called a "mean maximal power" curve) shows the highest average power a rider sustained for each duration: 5 seconds, 1 minute, 5 minutes, 20 minutes, 60 minutes, etc. It is calculated by sliding a window of each duration across the stream data and finding the maximum average. DuckDB's window functions (`AVG(...) OVER (...)`) make this query tractable. The result is displayed as a table of duration → peak power values followed by an ASCII line chart — the same `asciigraph` renderer used by `ride <id> stream` — plotting the characteristic downward curve from sprint peak to sustained power.
 
 This is the signature analytical feature for any cyclist with a power meter, and the primary reason serious cyclists use platforms like TrainingPeaks, WKO, or Intervals.icu.
 
@@ -219,6 +219,17 @@ paceline ride 42 power-curve
 # │ 20 min   │ 298 W   │
 # │ 60 min   │ 261 W   │
 # └──────────┴─────────┘
+#
+# 812 ┤╮
+# 730 ┤╰─╮
+# 649 ┤  ╰──╮
+# 567 ┤     ╰───╮
+# 486 ┤         ╰────╮
+# 404 ┤              ╰─────╮
+# 323 ┤                    ╰──────╮
+# 261 ┤                           ╰
+#      5s  30s  1m  5m  10m  20m  60m
+#               power curve
 
 # All-time best power curve across all rides
 paceline records power-curve
