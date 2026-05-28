@@ -279,6 +279,14 @@ func buildRecordsWhere(f RecordsFilters) (string, []any) {
 // queryMaxRidesRecord returns the PersonalRecord for the given column in the rides table.
 // Uses NULLS LAST so NULL values sort after non-NULL; returns nil if all values are NULL.
 func (s *Store) queryMaxRidesRecord(field, where string, args []any) (*PersonalRecord, error) {
+	allowed := map[string]bool{
+		"distance_m": true, "duration_s": true, "elevation_gain_m": true,
+		"avg_power_w": true, "avg_speed_mps": true, "avg_hr_bpm": true,
+		"max_speed_mps": true, "calories": true,
+	}
+	if !allowed[field] {
+		return nil, fmt.Errorf("queryMaxRidesRecord: unknown field %q", field)
+	}
 	q := fmt.Sprintf(
 		`SELECT CAST(%s AS DOUBLE), recorded_at FROM rides%s ORDER BY %s DESC NULLS LAST LIMIT 1`,
 		field, where, field,
