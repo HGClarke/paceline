@@ -67,22 +67,9 @@ func runRecords(cmd *cobra.Command, args []string) error {
 			f.Year = &y
 		}
 	}
-	if recordsFrom != "" {
-		t, err := time.Parse("2006-01-02", recordsFrom)
-		if err != nil {
-			return fmt.Errorf("invalid --from %q: use YYYY-MM-DD", recordsFrom)
-		}
-		f.From = &t
-	}
-	if recordsTo != "" {
-		t, err := time.Parse("2006-01-02", recordsTo)
-		if err != nil {
-			return fmt.Errorf("invalid --to %q: use YYYY-MM-DD", recordsTo)
-		}
-		f.To = &t
-	}
-	if f.From != nil && f.To != nil && f.From.After(*f.To) {
-		return fmt.Errorf("--from must not be after --to")
+	f.From, f.To, err = parseDateRange(recordsFrom, recordsTo)
+	if err != nil {
+		return err
 	}
 
 	// Build human-readable label from the active filters.
@@ -100,12 +87,8 @@ func runRecords(cmd *cobra.Command, args []string) error {
 		if f.Week != nil {
 			labelParts = append(labelParts, fmt.Sprintf("week %d", *f.Week))
 		}
-		if f.From != nil && f.To != nil { //nolint:gocritic // ifElseChain: switch not applicable for pointer comparisons
-			labelParts = append(labelParts, fmt.Sprintf("%s to %s", f.From.Format("2006-01-02"), f.To.Format("2006-01-02")))
-		} else if f.From != nil {
-			labelParts = append(labelParts, fmt.Sprintf("from %s", f.From.Format("2006-01-02")))
-		} else if f.To != nil {
-			labelParts = append(labelParts, fmt.Sprintf("to %s", f.To.Format("2006-01-02")))
+		if part := dateRangeLabel(f.From, f.To); part != "" {
+			labelParts = append(labelParts, part)
 		}
 		label = strings.Join(labelParts, " ")
 		if label == "" {

@@ -1040,3 +1040,34 @@ func TestGetRecords_FromToFilter(t *testing.T) {
 		t.Errorf("LongestDistanceM: got %v, want 50000 (only inside-range ride)", recs.LongestDistanceM.RawValue)
 	}
 }
+
+func TestListRides_ToFilter_InclusiveLateInDay(t *testing.T) {
+	s := openTestStore(t)
+
+	// Ride recorded at 23:30 on the --to date must be included,
+	// confirming the SQL uses < (date + INTERVAL 1 DAY) not <= date.
+	lateOnBoundary := time.Date(2024, 3, 31, 23, 30, 0, 0, time.UTC)
+	nextDay := time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
+
+	rides := []parser.Ride{
+		{Filename: "late_boundary.gpx", RecordedAt: lateOnBoundary, SourceFormat: "gpx"},
+		{Filename: "next_day.gpx", RecordedAt: nextDay, SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	to := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	result, total, err := s.ListRides(store.RideFilters{To: &to, Limit: 10, Page: 1})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+	if total != 1 {
+		t.Errorf("total: got %d, want 1 (late ride on boundary day must be included)", total)
+	}
+	if len(result) == 0 || result[0].Filename != "late_boundary.gpx" {
+		t.Errorf("expected late_boundary.gpx to be included")
+	}
+}

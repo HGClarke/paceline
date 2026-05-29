@@ -68,22 +68,9 @@ func runRides(cmd *cobra.Command, args []string) error {
 		}
 		f.Date = &t
 	}
-	if ridesFrom != "" {
-		t, err := time.Parse("2006-01-02", ridesFrom)
-		if err != nil {
-			return fmt.Errorf("invalid --from %q: use YYYY-MM-DD", ridesFrom)
-		}
-		f.From = &t
-	}
-	if ridesTo != "" {
-		t, err := time.Parse("2006-01-02", ridesTo)
-		if err != nil {
-			return fmt.Errorf("invalid --to %q: use YYYY-MM-DD", ridesTo)
-		}
-		f.To = &t
-	}
-	if f.From != nil && f.To != nil && f.From.After(*f.To) {
-		return fmt.Errorf("--from must not be after --to")
+	f.From, f.To, err = parseDateRange(ridesFrom, ridesTo)
+	if err != nil {
+		return err
 	}
 
 	loadPage := func(page int) ([]parser.Ride, int, error) {
