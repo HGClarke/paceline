@@ -21,6 +21,8 @@ var (
 	statsYear  int
 	statsMonth int
 	statsWeek  int
+	statsFrom  string
+	statsTo    string
 )
 
 func init() {
@@ -28,6 +30,8 @@ func init() {
 	statsCmd.Flags().IntVar(&statsYear, "year", 0, "filter by year (e.g. 2024)")
 	statsCmd.Flags().IntVar(&statsMonth, "month", 0, "filter by month (1-12)")
 	statsCmd.Flags().IntVar(&statsWeek, "week", 0, "filter by ISO week number (1-53)")
+	statsCmd.Flags().StringVar(&statsFrom, "from", "", "filter rides on or after this date (YYYY-MM-DD)")
+	statsCmd.Flags().StringVar(&statsTo, "to", "", "filter rides on or before this date (YYYY-MM-DD)")
 }
 
 func runStats(cmd *cobra.Command, args []string) error {
@@ -44,7 +48,7 @@ func runStats(cmd *cobra.Command, args []string) error {
 	now := time.Now()
 	f := store.StatsFilters{}
 
-	noFlags := statsYear == 0 && statsMonth == 0 && statsWeek == 0
+	noFlags := statsYear == 0 && statsMonth == 0 && statsWeek == 0 && statsFrom == "" && statsTo == ""
 
 	if statsYear != 0 {
 		f.Year = &statsYear
@@ -63,6 +67,23 @@ func runStats(cmd *cobra.Command, args []string) error {
 			f.Year = &y
 		}
 	}
+	if statsFrom != "" {
+		t, err := time.Parse("2006-01-02", statsFrom)
+		if err != nil {
+			return fmt.Errorf("invalid --from %q: use YYYY-MM-DD", statsFrom)
+		}
+		f.From = &t
+	}
+	if statsTo != "" {
+		t, err := time.Parse("2006-01-02", statsTo)
+		if err != nil {
+			return fmt.Errorf("invalid --to %q: use YYYY-MM-DD", statsTo)
+		}
+		f.To = &t
+	}
+	if f.From != nil && f.To != nil && f.From.After(*f.To) {
+		return fmt.Errorf("--from must not be after --to")
+	}
 
 	// Build human-readable label from the active filters.
 	var label string
@@ -78,6 +99,14 @@ func runStats(cmd *cobra.Command, args []string) error {
 		}
 		if f.Week != nil {
 			labelParts = append(labelParts, fmt.Sprintf("week %d", *f.Week))
+		}
+		//nolint:gocritic
+		if f.From != nil && f.To != nil {
+			labelParts = append(labelParts, fmt.Sprintf("%s to %s", f.From.Format("2006-01-02"), f.To.Format("2006-01-02")))
+		} else if f.From != nil {
+			labelParts = append(labelParts, fmt.Sprintf("from %s", f.From.Format("2006-01-02")))
+		} else if f.To != nil {
+			labelParts = append(labelParts, fmt.Sprintf("to %s", f.To.Format("2006-01-02")))
 		}
 		label = strings.Join(labelParts, " ")
 		if label == "" {
