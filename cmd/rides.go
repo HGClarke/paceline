@@ -21,6 +21,8 @@ var (
 	ridesYear  int
 	ridesMonth int
 	ridesDate  string
+	ridesFrom  string
+	ridesTo    string
 	ridesPage  int
 	ridesLimit int
 )
@@ -30,6 +32,8 @@ func init() {
 	ridesCmd.Flags().IntVar(&ridesYear, "year", 0, "filter by year (e.g. 2024)")
 	ridesCmd.Flags().IntVar(&ridesMonth, "month", 0, "filter by month (1-12)")
 	ridesCmd.Flags().StringVar(&ridesDate, "date", "", "filter by date (YYYY-MM-DD)")
+	ridesCmd.Flags().StringVar(&ridesFrom, "from", "", "filter rides on or after this date (YYYY-MM-DD)")
+	ridesCmd.Flags().StringVar(&ridesTo, "to", "", "filter rides on or before this date (YYYY-MM-DD)")
 	ridesCmd.Flags().IntVar(&ridesPage, "page", 1, "page number")
 	ridesCmd.Flags().IntVar(&ridesLimit, "limit", 10, "results per page")
 }
@@ -60,9 +64,26 @@ func runRides(cmd *cobra.Command, args []string) error {
 	if ridesDate != "" {
 		t, err := time.Parse("2006-01-02", ridesDate)
 		if err != nil {
-			return fmt.Errorf("invalid date %q: use YYYY-MM-DD", ridesDate)
+			return fmt.Errorf("invalid --date %q: use YYYY-MM-DD", ridesDate)
 		}
 		f.Date = &t
+	}
+	if ridesFrom != "" {
+		t, err := time.Parse("2006-01-02", ridesFrom)
+		if err != nil {
+			return fmt.Errorf("invalid --from %q: use YYYY-MM-DD", ridesFrom)
+		}
+		f.From = &t
+	}
+	if ridesTo != "" {
+		t, err := time.Parse("2006-01-02", ridesTo)
+		if err != nil {
+			return fmt.Errorf("invalid --to %q: use YYYY-MM-DD", ridesTo)
+		}
+		f.To = &t
+	}
+	if f.From != nil && f.To != nil && f.From.After(*f.To) {
+		return fmt.Errorf("--from must not be after --to")
 	}
 
 	loadPage := func(page int) ([]parser.Ride, int, error) {
