@@ -832,3 +832,119 @@ func TestGetRecords_PicksMax(t *testing.T) {
 		t.Errorf("HighestAvgSpeedMPS.Date: got %v, want %v", recs.HighestAvgSpeedMPS.Date, dateB)
 	}
 }
+
+func TestListRides_FromFilter(t *testing.T) {
+	s := openTestStore(t)
+
+	rides := []parser.Ride{
+		{Filename: "jan.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "mar.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "jun.gpx", RecordedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	from := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	result, total, err := s.ListRides(store.RideFilters{From: &from, Limit: 10, Page: 1})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("total: got %d, want 2", total)
+	}
+	if len(result) != 2 {
+		t.Errorf("len: got %d, want 2", len(result))
+	}
+	for _, r := range result {
+		if r.RecordedAt.Before(from) {
+			t.Errorf("ride %q has date %v before --from %v", r.Filename, r.RecordedAt, from)
+		}
+	}
+}
+
+func TestListRides_ToFilter(t *testing.T) {
+	s := openTestStore(t)
+
+	rides := []parser.Ride{
+		{Filename: "jan.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "mar.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "jun.gpx", RecordedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	to := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	result, total, err := s.ListRides(store.RideFilters{To: &to, Limit: 10, Page: 1})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("total: got %d, want 2", total)
+	}
+	if len(result) != 2 {
+		t.Errorf("len: got %d, want 2", len(result))
+	}
+}
+
+func TestListRides_FromToFilter(t *testing.T) {
+	s := openTestStore(t)
+
+	rides := []parser.Ride{
+		{Filename: "jan.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "mar.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "jun.gpx", RecordedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+		{Filename: "dec.gpx", RecordedAt: time.Date(2024, 12, 25, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	from := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	result, total, err := s.ListRides(store.RideFilters{From: &from, To: &to, Limit: 10, Page: 1})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+	if total != 2 {
+		t.Errorf("total: got %d, want 2 (mar+jun)", total)
+	}
+	if len(result) != 2 {
+		t.Errorf("len: got %d, want 2", len(result))
+	}
+}
+
+func TestListRides_ToFilter_Inclusive(t *testing.T) {
+	s := openTestStore(t)
+
+	// A ride recorded exactly on the --to date must be included.
+	boundary := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	rides := []parser.Ride{
+		{Filename: "on_boundary.gpx", RecordedAt: boundary, SourceFormat: "gpx"},
+		{Filename: "after_boundary.gpx", RecordedAt: time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC), SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	to := time.Date(2024, 3, 31, 0, 0, 0, 0, time.UTC)
+	result, total, err := s.ListRides(store.RideFilters{To: &to, Limit: 10, Page: 1})
+	if err != nil {
+		t.Fatalf("ListRides: %v", err)
+	}
+	if total != 1 {
+		t.Errorf("total: got %d, want 1 (boundary date must be included)", total)
+	}
+	if len(result) == 0 || result[0].Filename != "on_boundary.gpx" {
+		t.Errorf("expected on_boundary.gpx to be included")
+	}
+}

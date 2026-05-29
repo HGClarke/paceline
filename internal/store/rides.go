@@ -14,6 +14,8 @@ type RideFilters struct {
 	Year  *int
 	Month *int
 	Date  *time.Time
+	From  *time.Time
+	To    *time.Time
 	Page  int // 1-indexed
 	Limit int // default 10
 }
@@ -112,6 +114,18 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 	return rides, total, nil
 }
 
+func appendDateRangeClauses(clauses []string, args []any, from, to *time.Time) ([]string, []any) {
+	if from != nil {
+		clauses = append(clauses, "recorded_at >= ?::DATE")
+		args = append(args, from.Format("2006-01-02"))
+	}
+	if to != nil {
+		clauses = append(clauses, "recorded_at < (?::DATE + INTERVAL 1 DAY)")
+		args = append(args, to.Format("2006-01-02"))
+	}
+	return clauses, args
+}
+
 func buildRideWhere(f RideFilters) (string, []any) { //nolint:gocritic // unnamedResult: intentional, named returns add noise here
 	var clauses []string
 	var args []any
@@ -128,6 +142,8 @@ func buildRideWhere(f RideFilters) (string, []any) { //nolint:gocritic // unname
 		clauses = append(clauses, "DATE_TRUNC('day', recorded_at) = DATE_TRUNC('day', ?::TIMESTAMP)")
 		args = append(args, f.Date.Format(time.RFC3339))
 	}
+
+	clauses, args = appendDateRangeClauses(clauses, args, f.From, f.To)
 
 	if len(clauses) == 0 {
 		return "", args
