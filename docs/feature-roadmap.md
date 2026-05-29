@@ -12,7 +12,7 @@
 |---|---------|----------|--------|--------|
 | 1 | [Unit preferences (metric / imperial)](#1-unit-preferences-metric--imperial) | 🔴 High | Low | ✅ Completed |
 | 2 | [Personal records](#2-personal-records) | 🔴 High | Low | ✅ Completed |
-| 3 | [Date-range filtering](#3-date-range-filtering) | 🔴 High | Low | ⬜ Not Started |
+| 3 | [Date-range filtering](#3-date-range-filtering) | 🔴 High | Low | ✅ Completed |
 | 4 | [Ride sorting](#4-ride-sorting) | 🔴 High | Low | ⬜ Not Started |
 | 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium | ⬜ Not Started |
 | 6 | [Power curve](#6-power-curve) | 🟡 High | Medium | ⬜ Not Started |
@@ -121,6 +121,8 @@ paceline stats --range last-30-days
 paceline stats --range last-week
 paceline stats --range ytd
 ```
+
+> **Status: Completed.** `--from` and `--to` flags are live on `rides`, `stats`, and `records`. Shorthand keywords (`--range last-30-days`, `--range ytd`, etc.) remain a potential follow-on feature.
 
 ---
 

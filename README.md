@@ -133,6 +133,9 @@ paceline rides                        # 10 most recent
 paceline rides --year=2025            # all rides in 2025
 paceline rides --year=2025 --month=6  # June 2025 only
 paceline rides --date=2025-06-15      # a specific day
+paceline rides --from 2025-01-01 --to 2025-03-31
+paceline rides --from 2025-06-01               # on or after
+paceline rides --to 2025-06-30                 # on or before
 paceline rides --page=2 --limit=20   # pagination
 ```
 
@@ -154,6 +157,8 @@ paceline rides --page=2 --limit=20   # pagination
 | `--year` | — | Filter by year (e.g. `2025`) |
 | `--month` | — | Filter by month `1–12` (defaults to current year if year omitted) |
 | `--date` | — | Filter by exact date `YYYY-MM-DD` |
+| `--from` | — | Filter rides on or after this date `YYYY-MM-DD` |
+| `--to` | — | Filter rides on or before this date `YYYY-MM-DD` |
 | `--page` | `1` | Page number |
 | `--limit` | `10` | Results per page |
 
@@ -196,6 +201,8 @@ paceline stats                  # all-time totals (default)
 paceline stats --year=2025
 paceline stats --year=2025 --month=3
 paceline stats --year=2025 --week=12
+paceline stats --from 2025-01-01 --to 2025-03-31
+paceline stats --from 2025-01-01               # open-ended range
 paceline stats --json
 ```
 
@@ -210,6 +217,8 @@ paceline records                        # all-time records
 paceline records --year=2025            # records within 2025
 paceline records --year=2025 --month=6  # records within June 2025
 paceline records --year=2025 --week=12  # records within a specific ISO week
+paceline records --from 2025-01-01 --to 2025-03-31
+paceline records --from 2025-06-01
 paceline records --json
 ```
 
