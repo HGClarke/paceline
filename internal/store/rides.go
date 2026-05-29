@@ -155,6 +155,8 @@ type StatsFilters struct {
 	Year  *int
 	Month *int
 	Week  *int
+	From  *time.Time
+	To    *time.Time
 }
 
 type Stats struct {
@@ -197,6 +199,7 @@ func buildStatsWhere(f StatsFilters) (string, []any) { //nolint:gocritic // unna
 		clauses = append(clauses, "EXTRACT(WEEK FROM recorded_at) = ?")
 		args = append(args, *f.Week)
 	}
+	clauses, args = appendDateRangeClauses(clauses, args, f.From, f.To)
 
 	if len(clauses) == 0 {
 		return "", args
@@ -209,6 +212,8 @@ type RecordsFilters struct {
 	Year  *int
 	Month *int
 	Week  *int
+	From  *time.Time
+	To    *time.Time
 }
 
 // PersonalRecord holds the raw value and date of a single personal best.
@@ -285,6 +290,7 @@ func buildRecordsWhere(f RecordsFilters) (string, []any) { //nolint:gocritic // 
 		clauses = append(clauses, "EXTRACT(WEEK FROM recorded_at) = ?")
 		args = append(args, *f.Week)
 	}
+	clauses, args = appendDateRangeClauses(clauses, args, f.From, f.To)
 
 	if len(clauses) == 0 {
 		return "", args

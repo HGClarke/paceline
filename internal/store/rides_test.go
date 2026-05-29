@@ -948,3 +948,95 @@ func TestListRides_ToFilter_Inclusive(t *testing.T) {
 		t.Errorf("expected on_boundary.gpx to be included")
 	}
 }
+
+func TestGetStats_FromToFilter(t *testing.T) {
+	s := openTestStore(t)
+
+	rides := []parser.Ride{
+		{Filename: "jan.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), DistanceM: 10000, DurationS: 1200, ElevationGainM: 100, SourceFormat: "gpx"},
+		{Filename: "mar.gpx", RecordedAt: time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC), DistanceM: 20000, DurationS: 2400, ElevationGainM: 200, SourceFormat: "gpx"},
+		{Filename: "dec.gpx", RecordedAt: time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC), DistanceM: 30000, DurationS: 3600, ElevationGainM: 300, SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	from := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 6, 30, 0, 0, 0, 0, time.UTC)
+	stats, err := s.GetStats(store.StatsFilters{From: &from, To: &to})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+	if stats.RideCount != 1 {
+		t.Errorf("RideCount: got %d, want 1 (only mar)", stats.RideCount)
+	}
+	if stats.TotalDistanceM != 20000 {
+		t.Errorf("TotalDistanceM: got %v, want 20000", stats.TotalDistanceM)
+	}
+}
+
+func TestGetStats_FromOnly(t *testing.T) {
+	s := openTestStore(t)
+
+	rides := []parser.Ride{
+		{Filename: "jan.gpx", RecordedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC), DistanceM: 10000, DurationS: 1200, ElevationGainM: 100, SourceFormat: "gpx"},
+		{Filename: "jun.gpx", RecordedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC), DistanceM: 20000, DurationS: 2400, ElevationGainM: 200, SourceFormat: "gpx"},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	from := time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC)
+	stats, err := s.GetStats(store.StatsFilters{From: &from})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+	if stats.RideCount != 1 {
+		t.Errorf("RideCount: got %d, want 1", stats.RideCount)
+	}
+	if stats.TotalDistanceM != 20000 {
+		t.Errorf("TotalDistanceM: got %v, want 20000", stats.TotalDistanceM)
+	}
+}
+
+func TestGetRecords_FromToFilter(t *testing.T) {
+	s := openTestStore(t)
+
+	// Only the ride inside the range should contribute to records.
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "outside.gpx",
+		RecordedAt:   time.Date(2024, 1, 5, 0, 0, 0, 0, time.UTC),
+		DistanceM:    200000,
+		DurationS:    7200,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("insert outside: %v", err)
+	}
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "inside.gpx",
+		RecordedAt:   time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC),
+		DistanceM:    50000,
+		DurationS:    3600,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("insert inside: %v", err)
+	}
+
+	from := time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
+	recs, err := s.GetRecords(store.RecordsFilters{From: &from, To: &to})
+	if err != nil {
+		t.Fatalf("GetRecords: %v", err)
+	}
+	if recs.LongestDistanceM == nil {
+		t.Fatal("expected LongestDistanceM to be set")
+	}
+	// Must be the inside ride (50000), not outside (200000).
+	if recs.LongestDistanceM.RawValue != 50000 {
+		t.Errorf("LongestDistanceM: got %v, want 50000 (only inside-range ride)", recs.LongestDistanceM.RawValue)
+	}
+}
