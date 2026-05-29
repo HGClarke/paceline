@@ -16,7 +16,8 @@ import (
 // PrintRideList renders a table of rides to w. If jsonOut is true, emits JSON instead.
 func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(rides) // write error on stdout is unrecoverable
+		b, _ := json.MarshalIndent(rides, "", "  ")
+		fmt.Fprintln(w, string(b))
 		return
 	}
 	table := tablewriter.NewWriter(w)
@@ -46,7 +47,8 @@ func PrintRideList(w io.Writer, rides []parser.Ride, total, page, limit int, jso
 // PrintRideDetail renders a single ride's full summary to w.
 func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(r) // write error on stdout is unrecoverable
+		b, _ := json.MarshalIndent(r, "", "  ")
+		fmt.Fprintln(w, string(b))
 		return
 	}
 	table := tablewriter.NewWriter(w)
@@ -87,7 +89,8 @@ func PrintRideDetail(w io.Writer, r parser.Ride, jsonOut bool, units string) {
 // PrintStats renders aggregated stats to w.
 func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(st) // write error on stdout is unrecoverable
+		b, _ := json.MarshalIndent(st, "", "  ")
+		fmt.Fprintln(w, string(b))
 		return
 	}
 	fmt.Fprintf(w, "Stats: %s\n\n", label)
@@ -112,7 +115,8 @@ func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units s
 // If jsonOut is true, recs is serialised as JSON (nil fields appear as null).
 func PrintRecords(w io.Writer, recs store.Records, label string, jsonOut bool, units string) {
 	if jsonOut {
-		_ = json.NewEncoder(w).Encode(recs) // write error on stdout is unrecoverable
+		b, _ := json.MarshalIndent(recs, "", "  ")
+		fmt.Fprintln(w, string(b))
 		return
 	}
 
