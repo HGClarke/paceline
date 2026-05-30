@@ -101,13 +101,28 @@ func PrintStats(w io.Writer, st store.Stats, label string, jsonOut bool, units s
 		}),
 		tablewriter.WithRowAlignment(tw.AlignLeft),
 	)
-	_ = table.Bulk([][]string{ // write errors are unrecoverable; discard return value
+	rows := [][]string{
 		{"Rides", strconv.Itoa(st.RideCount)},
 		{"Total Distance", FormatDistance(st.TotalDistanceM, units)},
 		{"Total Duration", formatDuration(st.TotalDurationS)},
 		{"Total Elevation", FormatElevation(st.TotalElevationM, units)},
-	})
-	_ = table.Render() // write errors are unrecoverable; discard return value
+		{"Avg Speed", formatSpeed(st.AvgSpeedMPS, units)},
+		{"Max Speed", formatSpeed(st.MaxSpeedMPS, units)},
+	}
+	if st.AvgHRBPM != nil {
+		rows = append(rows, []string{"Avg HR", fmt.Sprintf("%d bpm", int(math.Round(*st.AvgHRBPM)))})
+	}
+	if st.MaxHRBPM != nil {
+		rows = append(rows, []string{"Max HR", fmt.Sprintf("%d bpm", int(math.Round(*st.MaxHRBPM)))})
+	}
+	if st.AvgPowerW != nil {
+		rows = append(rows, []string{"Avg Power", fmt.Sprintf("%d W", int(math.Round(*st.AvgPowerW)))})
+	}
+	if st.MaxPowerW != nil {
+		rows = append(rows, []string{"Max Power", fmt.Sprintf("%d W", int(math.Round(*st.MaxPowerW)))})
+	}
+	_ = table.Bulk(rows) // write errors are unrecoverable; discard return value
+	_ = table.Render()   // write errors are unrecoverable; discard return value
 }
 
 // PrintRecords renders personal records to w. Nil fields in recs are omitted entirely.

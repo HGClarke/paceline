@@ -164,6 +164,12 @@ type Stats struct {
 	TotalDistanceM  float64
 	TotalDurationS  int
 	TotalElevationM float64
+	AvgSpeedMPS     float64
+	MaxSpeedMPS     float64
+	AvgPowerW       *float64
+	MaxPowerW       *float64
+	AvgHRBPM        *float64
+	MaxHRBPM        *float64
 }
 
 func (s *Store) GetStats(f StatsFilters) (Stats, error) {
@@ -173,12 +179,35 @@ func (s *Store) GetStats(f StatsFilters) (Stats, error) {
 			COUNT(*),
 			COALESCE(SUM(distance_m), 0),
 			COALESCE(SUM(duration_s), 0),
-			COALESCE(SUM(elevation_gain_m), 0)
+			COALESCE(SUM(elevation_gain_m), 0),
+			COALESCE(AVG(avg_speed_mps), 0),
+			COALESCE(MAX(max_speed_mps), 0),
+			AVG(avg_power_w),
+			CAST(MAX(max_power_w) AS DOUBLE),
+			AVG(avg_hr_bpm),
+			CAST(MAX(max_hr_bpm) AS DOUBLE)
 		FROM rides`+where, args...)
 
 	var st Stats
-	if err := row.Scan(&st.RideCount, &st.TotalDistanceM, &st.TotalDurationS, &st.TotalElevationM); err != nil {
+	var avgPower, maxPower, avgHR, maxHR sql.NullFloat64
+	if err := row.Scan(
+		&st.RideCount, &st.TotalDistanceM, &st.TotalDurationS, &st.TotalElevationM,
+		&st.AvgSpeedMPS, &st.MaxSpeedMPS,
+		&avgPower, &maxPower, &avgHR, &maxHR,
+	); err != nil {
 		return st, fmt.Errorf("get stats: %w", err)
+	}
+	if avgPower.Valid {
+		st.AvgPowerW = &avgPower.Float64
+	}
+	if maxPower.Valid {
+		st.MaxPowerW = &maxPower.Float64
+	}
+	if avgHR.Valid {
+		st.AvgHRBPM = &avgHR.Float64
+	}
+	if maxHR.Valid {
+		st.MaxHRBPM = &maxHR.Float64
 	}
 	return st, nil
 }

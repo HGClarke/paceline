@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Workflow preferences
 
-- After completing any feature implementation, always run a final code review.
+- After completing any feature implementation, always run a final code review — this applies to both the main agent and any subagent finishing an implementation task.
 - **Major issues** found by the reviewer: address and fix immediately without asking.
 - **Minor issues** found by the reviewer: prompt the user ("Should we address these minor items?"). If yes, fix them. If no, complete as-is.
+- **After code-review fixes**: always amend the most recent commit (`git commit --amend --no-edit`) rather than creating a new commit. Do not create a new commit for reviewer-driven fixes.
 - When completing a `writing-plans` skill, always proceed immediately with **subagent-driven development** without asking.
 
 ## Commands

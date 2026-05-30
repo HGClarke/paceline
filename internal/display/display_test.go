@@ -161,18 +161,101 @@ func TestPrintRideDetail_JSON(t *testing.T) {
 
 func TestPrintStats_JSON(t *testing.T) {
 	var buf bytes.Buffer
+	avgPower := 231.0
 	st := store.Stats{
 		RideCount:      5,
 		TotalDistanceM: 100000,
 		TotalDurationS: 18000,
+		AvgSpeedMPS:    7.5,
+		MaxSpeedMPS:    12.0,
+		AvgPowerW:      &avgPower,
 	}
 	PrintStats(&buf, st, "all time", true, "metric")
 	output := buf.String()
-	if !strings.Contains(output, `"RideCount"`) {
-		t.Errorf("expected JSON key 'RideCount', got:\n%s", output)
+	// nil pointer fields still appear in JSON output as null, so all keys are always present
+	for _, want := range []string{
+		`"RideCount"`, `"AvgSpeedMPS"`, `"MaxSpeedMPS"`,
+		`"AvgPowerW"`, `"MaxPowerW"`, `"AvgHRBPM"`, `"MaxHRBPM"`,
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected JSON key %s in output, got:\n%s", want, output)
+		}
 	}
 	if !strings.Contains(output, "\n  ") {
 		t.Errorf("expected indented JSON (newline + 2 spaces), got:\n%s", output)
+	}
+}
+
+func TestPrintStats_WithPowerAndHR(t *testing.T) {
+	var buf bytes.Buffer
+	avgPower, maxPower := 231.0, 421.0
+	avgHR, maxHR := 148.0, 183.0
+	st := store.Stats{
+		RideCount:       14,
+		TotalDistanceM:  423700,
+		TotalDurationS:  67320,
+		TotalElevationM: 4210,
+		AvgSpeedMPS:     7.89,
+		MaxSpeedMPS:     14.47,
+		AvgPowerW:       &avgPower,
+		MaxPowerW:       &maxPower,
+		AvgHRBPM:        &avgHR,
+		MaxHRBPM:        &maxHR,
+	}
+	PrintStats(&buf, st, "all time", false, "metric")
+	output := buf.String()
+	for _, want := range []string{
+		"Avg Speed", "Max Speed", "28.4 km/h", "52.1 km/h",
+		"Avg Power", "231 W",
+		"Max Power", "421 W",
+		"Avg HR", "148 bpm",
+		"Max HR", "183 bpm",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, output)
+		}
+	}
+}
+
+func TestPrintStats_NoPowerNoHR(t *testing.T) {
+	var buf bytes.Buffer
+	st := store.Stats{
+		RideCount:      3,
+		TotalDistanceM: 87200,
+		TotalDurationS: 11640,
+		AvgSpeedMPS:    7.5,
+		MaxSpeedMPS:    12.0,
+	}
+	PrintStats(&buf, st, "all time", false, "metric")
+	output := buf.String()
+	for _, want := range []string{"Avg Speed", "Max Speed"} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, output)
+		}
+	}
+	for _, absent := range []string{"Avg Power", "Max Power", "Avg HR", "Max HR"} {
+		if strings.Contains(output, absent) {
+			t.Errorf("expected %q to be absent from output:\n%s", absent, output)
+		}
+	}
+}
+
+func TestPrintStats_EmptyDB(t *testing.T) {
+	var buf bytes.Buffer
+	st := store.Stats{} // zero value: RideCount=0, all speeds=0, all pointers nil
+	PrintStats(&buf, st, "all time", false, "metric")
+	output := buf.String()
+	// Speed rows always appear even when RideCount is 0
+	for _, want := range []string{"Avg Speed", "Max Speed", "0.0 km/h"} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, output)
+		}
+	}
+	// Power and HR rows must be absent (nil fields)
+	for _, absent := range []string{"Avg Power", "Max Power", "Avg HR", "Max HR"} {
+		if strings.Contains(output, absent) {
+			t.Errorf("expected %q to be absent from output:\n%s", absent, output)
+		}
 	}
 }
 
