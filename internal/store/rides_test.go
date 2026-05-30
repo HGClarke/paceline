@@ -360,6 +360,24 @@ func TestGetStats_Empty(t *testing.T) {
 	if stats.TotalElevationM != 0 {
 		t.Errorf("expected 0 elevation, got %v", stats.TotalElevationM)
 	}
+	if stats.AvgSpeedMPS != 0 {
+		t.Errorf("expected 0 AvgSpeedMPS, got %v", stats.AvgSpeedMPS)
+	}
+	if stats.MaxSpeedMPS != 0 {
+		t.Errorf("expected 0 MaxSpeedMPS, got %v", stats.MaxSpeedMPS)
+	}
+	if stats.AvgPowerW != nil {
+		t.Errorf("expected nil AvgPowerW, got %v", stats.AvgPowerW)
+	}
+	if stats.MaxPowerW != nil {
+		t.Errorf("expected nil MaxPowerW, got %v", stats.MaxPowerW)
+	}
+	if stats.AvgHRBPM != nil {
+		t.Errorf("expected nil AvgHRBPM, got %v", stats.AvgHRBPM)
+	}
+	if stats.MaxHRBPM != nil {
+		t.Errorf("expected nil MaxHRBPM, got %v", stats.MaxHRBPM)
+	}
 }
 
 func TestGetRideByPosition_HappyPath(t *testing.T) {
@@ -1069,5 +1087,183 @@ func TestListRides_ToFilter_InclusiveLateInDay(t *testing.T) {
 	}
 	if len(result) == 0 || result[0].Filename != "late_boundary.gpx" {
 		t.Errorf("expected late_boundary.gpx to be included")
+	}
+}
+
+func TestGetStats_NewFields_WithSensorData(t *testing.T) {
+	s := openTestStore(t)
+
+	avgHR, maxHR := 150, 175
+	avgPower, maxPower := 220, 380
+	rides := []parser.Ride{
+		{
+			Filename:     "ride1.gpx",
+			RecordedAt:   time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+			AvgSpeedMPS:  8.0,
+			MaxSpeedMPS:  14.0,
+			AvgHRBPM:     &avgHR,
+			MaxHRBPM:     &maxHR,
+			AvgPowerW:    &avgPower,
+			MaxPowerW:    &maxPower,
+			SourceFormat: "gpx",
+		},
+		{
+			Filename:     "ride2.gpx",
+			RecordedAt:   time.Date(2024, 6, 2, 0, 0, 0, 0, time.UTC),
+			AvgSpeedMPS:  10.0,
+			MaxSpeedMPS:  18.0,
+			AvgHRBPM:     &avgHR,
+			MaxHRBPM:     &maxHR,
+			AvgPowerW:    &avgPower,
+			MaxPowerW:    &maxPower,
+			SourceFormat: "gpx",
+		},
+	}
+	for _, r := range rides {
+		if _, err := s.InsertRide(r); err != nil {
+			t.Fatalf("InsertRide: %v", err)
+		}
+	}
+
+	st, err := s.GetStats(store.StatsFilters{})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+
+	approx := func(got, want float64) bool {
+		diff := got - want
+		if diff < 0 {
+			diff = -diff
+		}
+		return diff < 0.5
+	}
+
+	// expected: avg speed is 9.0 (average of 8.0 and 10.0); max speed is 18.0
+	if st.AvgSpeedMPS != 9.0 {
+		t.Errorf("AvgSpeedMPS: got %v, want 9.0", st.AvgSpeedMPS)
+	}
+	if st.MaxSpeedMPS != 18.0 {
+		t.Errorf("MaxSpeedMPS: got %v, want 18.0", st.MaxSpeedMPS)
+	}
+	if st.AvgPowerW == nil {
+		t.Fatal("AvgPowerW: got nil, want non-nil")
+	}
+	if !approx(*st.AvgPowerW, 220) {
+		t.Errorf("AvgPowerW: got %v, want ~220", *st.AvgPowerW)
+	}
+	if st.MaxPowerW == nil {
+		t.Fatal("MaxPowerW: got nil, want non-nil")
+	}
+	if !approx(*st.MaxPowerW, 380) {
+		t.Errorf("MaxPowerW: got %v, want ~380", *st.MaxPowerW)
+	}
+	if st.AvgHRBPM == nil {
+		t.Fatal("AvgHRBPM: got nil, want non-nil")
+	}
+	if !approx(*st.AvgHRBPM, 150) {
+		t.Errorf("AvgHRBPM: got %v, want ~150", *st.AvgHRBPM)
+	}
+	if st.MaxHRBPM == nil {
+		t.Fatal("MaxHRBPM: got nil, want non-nil")
+	}
+	if !approx(*st.MaxHRBPM, 175) {
+		t.Errorf("MaxHRBPM: got %v, want ~175", *st.MaxHRBPM)
+	}
+}
+
+func TestGetStats_NewFields_NoSensorData(t *testing.T) {
+	s := openTestStore(t)
+
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "no_sensors.gpx",
+		RecordedAt:   time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		AvgSpeedMPS:  7.5,
+		MaxSpeedMPS:  12.0,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("InsertRide: %v", err)
+	}
+
+	st, err := s.GetStats(store.StatsFilters{})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+
+	if st.AvgSpeedMPS != 7.5 {
+		t.Errorf("AvgSpeedMPS: got %v, want 7.5", st.AvgSpeedMPS)
+	}
+	if st.MaxSpeedMPS != 12.0 {
+		t.Errorf("MaxSpeedMPS: got %v, want 12.0", st.MaxSpeedMPS)
+	}
+	if st.AvgPowerW != nil {
+		t.Errorf("AvgPowerW: got %v, want nil", *st.AvgPowerW)
+	}
+	if st.MaxPowerW != nil {
+		t.Errorf("MaxPowerW: got %v, want nil", *st.MaxPowerW)
+	}
+	if st.AvgHRBPM != nil {
+		t.Errorf("AvgHRBPM: got %v, want nil", *st.AvgHRBPM)
+	}
+	if st.MaxHRBPM != nil {
+		t.Errorf("MaxHRBPM: got %v, want nil", *st.MaxHRBPM)
+	}
+}
+
+func TestGetStats_NewFields_MixedSensorData(t *testing.T) {
+	s := openTestStore(t)
+
+	avgPower, maxPower := 200, 350
+
+	// ride1 has power data; ride2 does not
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "with_power.gpx",
+		RecordedAt:   time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		AvgSpeedMPS:  8.0,
+		MaxSpeedMPS:  14.0,
+		AvgPowerW:    &avgPower,
+		MaxPowerW:    &maxPower,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("InsertRide with_power: %v", err)
+	}
+	if _, err := s.InsertRide(parser.Ride{
+		Filename:     "no_power.gpx",
+		RecordedAt:   time.Date(2024, 6, 2, 0, 0, 0, 0, time.UTC),
+		AvgSpeedMPS:  10.0,
+		MaxSpeedMPS:  18.0,
+		SourceFormat: "gpx",
+	}); err != nil {
+		t.Fatalf("InsertRide no_power: %v", err)
+	}
+
+	st, err := s.GetStats(store.StatsFilters{})
+	if err != nil {
+		t.Fatalf("GetStats: %v", err)
+	}
+
+	approx := func(got, want float64) bool {
+		diff := got - want
+		if diff < 0 {
+			diff = -diff
+		}
+		return diff < 0.5
+	}
+
+	// SQL AVG ignores NULL rows — result is avg of the one non-NULL ride only
+	if st.AvgPowerW == nil {
+		t.Fatal("AvgPowerW: got nil, want non-nil (one ride has power)")
+	}
+	if !approx(*st.AvgPowerW, 200) {
+		t.Errorf("AvgPowerW: got %v, want ~200", *st.AvgPowerW)
+	}
+	if st.MaxPowerW == nil {
+		t.Fatal("MaxPowerW: got nil, want non-nil")
+	}
+	if !approx(*st.MaxPowerW, 350) {
+		t.Errorf("MaxPowerW: got %v, want ~350", *st.MaxPowerW)
+	}
+	// HR should be nil since neither ride has HR data
+	if st.AvgHRBPM != nil {
+		t.Errorf("AvgHRBPM: got %v, want nil", *st.AvgHRBPM)
 	}
 }
