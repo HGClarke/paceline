@@ -183,9 +183,9 @@ func (s *Store) GetStats(f StatsFilters) (Stats, error) {
 			COALESCE(AVG(avg_speed_mps), 0),
 			COALESCE(MAX(max_speed_mps), 0),
 			AVG(avg_power_w),
-			MAX(max_power_w),
+			CAST(MAX(max_power_w) AS DOUBLE),
 			AVG(avg_hr_bpm),
-			MAX(max_hr_bpm)
+			CAST(MAX(max_hr_bpm) AS DOUBLE)
 		FROM rides`+where, args...)
 
 	var st Stats

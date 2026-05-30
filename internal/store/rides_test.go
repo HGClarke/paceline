@@ -20,6 +20,14 @@ func openTestStore(t *testing.T) *store.Store {
 	return s
 }
 
+func approxFloat(got, want float64) bool {
+	diff := got - want
+	if diff < 0 {
+		diff = -diff
+	}
+	return diff < 0.5
+}
+
 func TestInsertAndGetRide(t *testing.T) {
 	s := openTestStore(t)
 
@@ -1130,14 +1138,6 @@ func TestGetStats_NewFields_WithSensorData(t *testing.T) {
 		t.Fatalf("GetStats: %v", err)
 	}
 
-	approx := func(got, want float64) bool {
-		diff := got - want
-		if diff < 0 {
-			diff = -diff
-		}
-		return diff < 0.5
-	}
-
 	// expected: avg speed is 9.0 (average of 8.0 and 10.0); max speed is 18.0
 	if st.AvgSpeedMPS != 9.0 {
 		t.Errorf("AvgSpeedMPS: got %v, want 9.0", st.AvgSpeedMPS)
@@ -1148,25 +1148,25 @@ func TestGetStats_NewFields_WithSensorData(t *testing.T) {
 	if st.AvgPowerW == nil {
 		t.Fatal("AvgPowerW: got nil, want non-nil")
 	}
-	if !approx(*st.AvgPowerW, 220) {
+	if !approxFloat(*st.AvgPowerW, 220) {
 		t.Errorf("AvgPowerW: got %v, want ~220", *st.AvgPowerW)
 	}
 	if st.MaxPowerW == nil {
 		t.Fatal("MaxPowerW: got nil, want non-nil")
 	}
-	if !approx(*st.MaxPowerW, 380) {
+	if !approxFloat(*st.MaxPowerW, 380) {
 		t.Errorf("MaxPowerW: got %v, want ~380", *st.MaxPowerW)
 	}
 	if st.AvgHRBPM == nil {
 		t.Fatal("AvgHRBPM: got nil, want non-nil")
 	}
-	if !approx(*st.AvgHRBPM, 150) {
+	if !approxFloat(*st.AvgHRBPM, 150) {
 		t.Errorf("AvgHRBPM: got %v, want ~150", *st.AvgHRBPM)
 	}
 	if st.MaxHRBPM == nil {
 		t.Fatal("MaxHRBPM: got nil, want non-nil")
 	}
-	if !approx(*st.MaxHRBPM, 175) {
+	if !approxFloat(*st.MaxHRBPM, 175) {
 		t.Errorf("MaxHRBPM: got %v, want ~175", *st.MaxHRBPM)
 	}
 }
@@ -1241,25 +1241,17 @@ func TestGetStats_NewFields_MixedSensorData(t *testing.T) {
 		t.Fatalf("GetStats: %v", err)
 	}
 
-	approx := func(got, want float64) bool {
-		diff := got - want
-		if diff < 0 {
-			diff = -diff
-		}
-		return diff < 0.5
-	}
-
 	// SQL AVG ignores NULL rows — result is avg of the one non-NULL ride only
 	if st.AvgPowerW == nil {
 		t.Fatal("AvgPowerW: got nil, want non-nil (one ride has power)")
 	}
-	if !approx(*st.AvgPowerW, 200) {
+	if !approxFloat(*st.AvgPowerW, 200) {
 		t.Errorf("AvgPowerW: got %v, want ~200", *st.AvgPowerW)
 	}
 	if st.MaxPowerW == nil {
 		t.Fatal("MaxPowerW: got nil, want non-nil")
 	}
-	if !approx(*st.MaxPowerW, 350) {
+	if !approxFloat(*st.MaxPowerW, 350) {
 		t.Errorf("MaxPowerW: got %v, want ~350", *st.MaxPowerW)
 	}
 	// HR should be nil since neither ride has HR data
