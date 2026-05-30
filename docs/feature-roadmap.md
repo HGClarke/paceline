@@ -17,10 +17,10 @@
 | 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium | ⬜ Not Started |
 | 6 | [Power curve](#6-power-curve) | 🟡 High | Medium | ⬜ Not Started |
 | 7 | [Ride naming & notes](#7-ride-naming--notes) | 🟡 High | Medium | ⬜ Not Started |
-| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium | ✅ Completed |
+| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium | ⬜ Not Started |
 | 9 | [HR zone analysis](#9-hr-zone-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
 | 10 | [Streak & consistency tracking](#10-streak--consistency-tracking) | 🟠 Medium | Medium | ⬜ Not Started |
-| 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium | ⬜ Not Started |
+| 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium | ✅ Completed |
 | 12 | [Multi-field stream overlay](#12-multi-field-stream-overlay) | 🟠 Medium | Medium | ⬜ Not Started |
 | 13 | [AI ride analysis](#13-ai-ride-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
 | 14 | [Strava sync](#14-strava-sync) | 🟠 Medium | High | ⬜ Not Started |
@@ -405,6 +405,8 @@ paceline stats --year 2024 --compare 2023
 # Compare current month to same month last year
 paceline stats --month 5 --year 2025 --compare 2024
 ```
+
+> **Status: Completed.** `--compare <year>` is live on `stats`. Compares totals (rides, distance, duration, elevation) side-by-side with a Δ column. Supports `--year` and `--month` filters; `--week` and date ranges are not supported with `--compare`.
 
 ---
 
