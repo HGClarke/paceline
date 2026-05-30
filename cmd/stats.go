@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,11 +19,12 @@ var statsCmd = &cobra.Command{
 }
 
 var (
-	statsYear  int
-	statsMonth int
-	statsWeek  int
-	statsFrom  string
-	statsTo    string
+	statsYear    int
+	statsMonth   int
+	statsWeek    int
+	statsFrom    string
+	statsTo      string
+	statsCompare int
 )
 
 func init() {
@@ -32,6 +34,7 @@ func init() {
 	statsCmd.Flags().IntVar(&statsWeek, "week", 0, "filter by ISO week number (1-53)")
 	statsCmd.Flags().StringVar(&statsFrom, "from", "", "filter rides on or after this date (YYYY-MM-DD)")
 	statsCmd.Flags().StringVar(&statsTo, "to", "", "filter rides on or before this date (YYYY-MM-DD)")
+	statsCmd.Flags().IntVar(&statsCompare, "compare", 0, "compare to this year (e.g. --year 2025 --compare 2024)")
 }
 
 func runStats(cmd *cobra.Command, args []string) error {
@@ -72,6 +75,46 @@ func runStats(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if statsCompare != 0 {
+		// Default primary year to current if not explicitly set.
+		if f.Year == nil {
+			y := now.Year()
+			f.Year = &y
+		}
+		if err := validateCompareArgs(*f.Year, statsCompare, statsWeek, statsFrom, statsTo); err != nil {
+			return err
+		}
+
+		cmpF := store.StatsFilters{Year: &statsCompare}
+		if f.Month != nil {
+			m := *f.Month
+			cmpF.Month = &m
+		}
+
+		st1, err := s.GetStats(f)
+		if err != nil {
+			return err
+		}
+		st2, err := s.GetStats(cmpF)
+		if err != nil {
+			return err
+		}
+
+		primaryYear := *f.Year
+		var label1, label2 string
+		if f.Month != nil {
+			monthName := time.Month(*f.Month).String()
+			label1 = fmt.Sprintf("%s %d", monthName, primaryYear)
+			label2 = fmt.Sprintf("%s %d", monthName, statsCompare)
+		} else {
+			label1 = strconv.Itoa(primaryYear)
+			label2 = strconv.Itoa(statsCompare)
+		}
+
+		display.PrintStatsComparison(os.Stdout, st1, st2, label1, label2, jsonOutput, cfg.Units)
+		return nil
+	}
+
 	// Build human-readable label from the active filters.
 	var label string
 	if noFlags {
@@ -102,5 +145,17 @@ func runStats(cmd *cobra.Command, args []string) error {
 	}
 
 	display.PrintStats(os.Stdout, st, label, jsonOutput, cfg.Units)
+	return nil
+}
+
+// validateCompareArgs returns an error if the --compare flag is combined with
+// incompatible flags or if both years are the same.
+func validateCompareArgs(primaryYear, compareYear, statsWeek int, statsFrom, statsTo string) error {
+	if statsWeek != 0 || statsFrom != "" || statsTo != "" {
+		return fmt.Errorf("--compare is only supported with --year and --month")
+	}
+	if compareYear == primaryYear {
+		return fmt.Errorf("--compare year must differ from the primary year")
+	}
 	return nil
 }
