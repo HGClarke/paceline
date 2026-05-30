@@ -259,3 +259,88 @@ func FormatElevation(m float64, units string) string {
 	}
 	return fmt.Sprintf("%.0f m", m)
 }
+
+// formatStatsDelta formats the signed delta between v1 and v2 as "+X unit (+pct%)" or "-X unit (-pct%)".
+// formatAbs formats the absolute (non-negative) delta value with its unit.
+// When v2 is zero, the percentage is omitted.
+func formatStatsDelta(v1, v2 float64, formatAbs func(float64) string) string {
+	delta := v1 - v2
+	abs := math.Abs(delta)
+	var sign string
+	switch {
+	case delta > 0:
+		sign = "+"
+	case delta < 0:
+		sign = "-"
+	}
+	formatted := sign + formatAbs(abs)
+	if v2 == 0 || delta == 0 {
+		return formatted
+	}
+	pct := delta / v2 * 100
+	absPct := math.Abs(pct)
+	if math.Round(absPct) == 0 {
+		return formatted
+	}
+	if pct > 0 {
+		return fmt.Sprintf("%s (+%.0f%%)", formatted, absPct)
+	}
+	return fmt.Sprintf("%s (-%.0f%%)", formatted, absPct)
+}
+
+// PrintStatsComparison renders a side-by-side comparison of two Stats periods.
+// label1 and label2 are the display names for the primary and compare periods (e.g. "2025", "2024").
+// Only total metrics are shown: rides, distance, duration, elevation.
+func PrintStatsComparison(w io.Writer, st1, st2 store.Stats, label1, label2 string, jsonOut bool, units string) {
+	if jsonOut {
+		type entry struct {
+			Label string      `json:"label"`
+			Stats store.Stats `json:"stats"`
+		}
+		out := struct {
+			Primary entry `json:"primary"`
+			Compare entry `json:"compare"`
+		}{
+			Primary: entry{Label: label1, Stats: st1},
+			Compare: entry{Label: label2, Stats: st2},
+		}
+		b, _ := json.MarshalIndent(out, "", "  ")
+		fmt.Fprintln(w, string(b))
+		return
+	}
+
+	fmt.Fprintf(w, "Stats: %s vs %s\n\n", label1, label2)
+
+	ridesDelta := formatStatsDelta(
+		float64(st1.RideCount), float64(st2.RideCount),
+		func(v float64) string { return strconv.Itoa(int(v)) },
+	)
+	distDelta := formatStatsDelta(
+		st1.TotalDistanceM, st2.TotalDistanceM,
+		func(v float64) string { return FormatDistance(v, units) },
+	)
+	durDelta := formatStatsDelta(
+		float64(st1.TotalDurationS), float64(st2.TotalDurationS),
+		func(v float64) string { return formatDuration(int(v)) },
+	)
+	elevDelta := formatStatsDelta(
+		st1.TotalElevationM, st2.TotalElevationM,
+		func(v float64) string { return FormatElevation(v, units) },
+	)
+
+	table := tablewriter.NewWriter(w)
+	table.Options(
+		tablewriter.WithBorders(tw.Border{ //nolint:staticcheck // SA1019: WithBorders deprecated but replacement API not yet stable
+			Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off,
+		}),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+	)
+	table.Header([]string{"Metric", label1, label2, "Δ"})
+	_ = table.Bulk([][]string{
+		{"Rides", strconv.Itoa(st1.RideCount), strconv.Itoa(st2.RideCount), ridesDelta},
+		{"Total Distance", FormatDistance(st1.TotalDistanceM, units), FormatDistance(st2.TotalDistanceM, units), distDelta},
+		{"Total Duration", formatDuration(st1.TotalDurationS), formatDuration(st2.TotalDurationS), durDelta},
+		{"Total Elevation", FormatElevation(st1.TotalElevationM, units), FormatElevation(st2.TotalElevationM, units), elevDelta},
+	})
+	_ = table.Render()
+}

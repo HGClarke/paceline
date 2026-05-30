@@ -2,6 +2,8 @@ package display
 
 import (
 	"bytes"
+	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -427,5 +429,124 @@ func TestPrintRecords_JSON(t *testing.T) {
 	}
 	if !strings.Contains(output, "\n  ") {
 		t.Errorf("expected indented JSON (newline + 2 spaces), got:\n%s", output)
+	}
+}
+
+func TestFormatStatsDelta_Positive(t *testing.T) {
+	got := formatStatsDelta(100000, 80000, func(v float64) string { return FormatDistance(v, "metric") })
+	// delta = 20000 m = +20.0 km; pct = 20000/80000*100 = 25%
+	if !strings.Contains(got, "+20.0 km") {
+		t.Errorf("expected '+20.0 km' in %q", got)
+	}
+	if !strings.Contains(got, "+25%") {
+		t.Errorf("expected '+25%%' in %q", got)
+	}
+}
+
+func TestFormatStatsDelta_Negative(t *testing.T) {
+	got := formatStatsDelta(80000, 100000, func(v float64) string { return FormatDistance(v, "metric") })
+	// delta = -20000 m = -20.0 km; pct = -20000/100000*100 = -20%
+	if !strings.Contains(got, "-20.0 km") {
+		t.Errorf("expected '-20.0 km' in %q", got)
+	}
+	if !strings.Contains(got, "-20%") {
+		t.Errorf("expected '-20%%' in %q", got)
+	}
+}
+
+func TestFormatStatsDelta_ZeroBase(t *testing.T) {
+	got := formatStatsDelta(5, 0, func(v float64) string { return strconv.Itoa(int(v)) })
+	// base is zero: no percentage, just "+5"
+	if got != "+5" {
+		t.Errorf("formatStatsDelta zero base = %q, want %q", got, "+5")
+	}
+}
+
+func TestPrintStatsComparison_Table(t *testing.T) {
+	st1 := store.Stats{
+		RideCount:       10,
+		TotalDistanceM:  100000,
+		TotalDurationS:  3600,  // "1h 00m 00s"
+		TotalElevationM: 1000,
+	}
+	st2 := store.Stats{
+		RideCount:       8,
+		TotalDistanceM:  80000,
+		TotalDurationS:  3200, // "53m 20s"
+		TotalElevationM: 800,
+	}
+	var buf bytes.Buffer
+	PrintStatsComparison(&buf, st1, st2, "2025", "2024", false, "metric")
+	out := buf.String()
+
+	for _, want := range []string{
+		"2025 vs 2024",
+		"1h 00m 00s",  // st1 duration
+		"53m 20s",     // st2 duration
+		"100.0 km",    // st1 distance
+		"80.0 km",     // st2 distance
+		"+20.0 km",    // distance delta value
+		"+6m 40s",     // duration delta (delta = 400s = 6m40s)
+		"+200 m",      // elevation delta value
+		"+25%",        // rides / distance / elevation pct
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q\ngot:\n%s", want, out)
+		}
+	}
+}
+
+func TestPrintStatsComparison_ZeroBase(t *testing.T) {
+	st1 := store.Stats{
+		RideCount:       5,
+		TotalDistanceM:  50000,
+		TotalDurationS:  1800, // "30m 00s"
+		TotalElevationM: 500,
+	}
+	st2 := store.Stats{} // all zeros
+	var buf bytes.Buffer
+	PrintStatsComparison(&buf, st1, st2, "2025", "2024", false, "metric")
+	out := buf.String()
+
+	for _, want := range []string{"+5", "+50.0 km", "+30m 00s", "+500 m"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q\ngot:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "%") {
+		t.Errorf("expected no percentage when base is zero, got:\n%s", out)
+	}
+}
+
+func TestPrintStatsComparison_JSON(t *testing.T) {
+	st1 := store.Stats{RideCount: 10, TotalDistanceM: 100000}
+	st2 := store.Stats{RideCount: 8, TotalDistanceM: 80000}
+	var buf bytes.Buffer
+	PrintStatsComparison(&buf, st1, st2, "2025", "2024", true, "metric")
+
+	var out struct {
+		Primary struct {
+			Label string      `json:"label"`
+			Stats store.Stats `json:"stats"`
+		} `json:"primary"`
+		Compare struct {
+			Label string      `json:"label"`
+			Stats store.Stats `json:"stats"`
+		} `json:"compare"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, buf.String())
+	}
+	if out.Primary.Label != "2025" {
+		t.Errorf("primary label = %q, want %q", out.Primary.Label, "2025")
+	}
+	if out.Compare.Label != "2024" {
+		t.Errorf("compare label = %q, want %q", out.Compare.Label, "2024")
+	}
+	if out.Primary.Stats.RideCount != 10 {
+		t.Errorf("primary ride count = %d, want 10", out.Primary.Stats.RideCount)
+	}
+	if out.Compare.Stats.RideCount != 8 {
+		t.Errorf("compare ride count = %d, want 8", out.Compare.Stats.RideCount)
 	}
 }
