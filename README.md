@@ -63,7 +63,7 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 - **Idempotent imports** — re-importing the same file is always a safe no-op
 - **Interactive TUI** — browse and paginate rides with a keyboard-driven interface (auto-detected when running in a terminal)
 - **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time
-- **Aggregated stats** — totals by month, week, or year
+- **Aggregated stats** — totals by month, week, or year; year-over-year comparison with `--compare`
 - **Personal records** — all-time bests for distance, duration, elevation, speed, power, HR, and more
 - **Metric & imperial** — switch units with a single config command
 - **JSON output** — pipe any command with `--json` for scripting and integrations
@@ -204,6 +204,15 @@ paceline stats --year=2025 --week=12
 paceline stats --from 2025-01-01 --to 2025-03-31
 paceline stats --from 2025-01-01               # open-ended range
 paceline stats --json
+
+# Year-over-year comparison (defaults to current year vs 2024)
+paceline stats --compare 2024
+
+# Explicit primary year
+paceline stats --year 2025 --compare 2024
+
+# Same month, different years
+paceline stats --month 5 --year 2025 --compare 2024
 ```
 
 ---
