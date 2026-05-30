@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Workflow preferences
+
+- After completing any feature implementation, always run a final code review.
+- **Major issues** found by the reviewer: address and fix immediately without asking.
+- **Minor issues** found by the reviewer: prompt the user ("Should we address these minor items?"). If yes, fix them. If no, complete as-is.
+- When completing a `writing-plans` skill, always proceed immediately with **subagent-driven development** without asking.
+
 ## Commands
 
 ```bash

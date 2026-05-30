@@ -120,6 +120,62 @@ func TestPrintRideList_Imperial(t *testing.T) {
 	}
 }
 
+func TestPrintRideList_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	rides := []parser.Ride{
+		{
+			Position:    1,
+			RecordedAt:  time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC),
+			DistanceM:   30000,
+			DurationS:   3600,
+			AvgSpeedMPS: 8.3,
+		},
+	}
+	PrintRideList(&buf, rides, 1, 1, 10, true, "metric")
+	output := buf.String()
+	if !strings.Contains(output, `"distance_m"`) {
+		t.Errorf("expected JSON key 'distance_m', got:\n%s", output)
+	}
+	if !strings.Contains(output, "\n  ") {
+		t.Errorf("expected indented JSON (newline + 2 spaces), got:\n%s", output)
+	}
+}
+
+func TestPrintRideDetail_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	r := parser.Ride{
+		RecordedAt:  time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC),
+		DistanceM:   50000,
+		DurationS:   7200,
+		AvgSpeedMPS: 6.9,
+	}
+	PrintRideDetail(&buf, r, true, "metric")
+	output := buf.String()
+	if !strings.Contains(output, `"distance_m"`) {
+		t.Errorf("expected JSON key 'distance_m', got:\n%s", output)
+	}
+	if !strings.Contains(output, "\n  ") {
+		t.Errorf("expected indented JSON (newline + 2 spaces), got:\n%s", output)
+	}
+}
+
+func TestPrintStats_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	st := store.Stats{
+		RideCount:      5,
+		TotalDistanceM: 100000,
+		TotalDurationS: 18000,
+	}
+	PrintStats(&buf, st, "all time", true, "metric")
+	output := buf.String()
+	if !strings.Contains(output, `"RideCount"`) {
+		t.Errorf("expected JSON key 'RideCount', got:\n%s", output)
+	}
+	if !strings.Contains(output, "\n  ") {
+		t.Errorf("expected indented JSON (newline + 2 spaces), got:\n%s", output)
+	}
+}
+
 func TestFormatDistance_Metric(t *testing.T) {
 	tests := []struct {
 		m    float64
@@ -285,5 +341,8 @@ func TestPrintRecords_JSON(t *testing.T) {
 	}
 	if !strings.Contains(output, "null") {
 		t.Errorf("expected null fields in JSON for absent records, got:\n%s", output)
+	}
+	if !strings.Contains(output, "\n  ") {
+		t.Errorf("expected indented JSON (newline + 2 spaces), got:\n%s", output)
 	}
 }
