@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/HGClarke/paceline/internal/display"
+	"github.com/HGClarke/paceline/internal/parser"
 	"github.com/HGClarke/paceline/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -71,7 +72,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(os.Stderr, "No %s data for ride #%d. Available fields: %v\n", field, currentRide.Position, available)
 			continue
 		}
-		display.PrintStreamChart(os.Stdout, points, field)
+		display.PrintStreamChart(os.Stdout, [][]parser.Stream{points}, []string{field})
 	}
 	return nil
 }

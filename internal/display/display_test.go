@@ -518,6 +518,33 @@ func TestPrintStatsComparison_ZeroBase(t *testing.T) {
 	}
 }
 
+func TestPrintStreamChart_SingleField(t *testing.T) {
+	power := 250
+	points := []parser.Stream{
+		{PowerW: &power},
+		{PowerW: &power},
+		{PowerW: &power},
+	}
+	var buf bytes.Buffer
+	PrintStreamChart(&buf, [][]parser.Stream{points}, []string{"power"})
+	out := buf.String()
+	if !strings.Contains(out, "power") {
+		t.Errorf("expected caption 'power' in output, got:\n%s", out)
+	}
+	if strings.Contains(out, "points") {
+		t.Errorf("expected no point count in caption, got:\n%s", out)
+	}
+}
+
+func TestPrintStreamChart_SingleField_NoData(t *testing.T) {
+	var buf bytes.Buffer
+	PrintStreamChart(&buf, [][]parser.Stream{{}}, []string{"power"})
+	out := buf.String()
+	if !strings.Contains(out, "No power data") {
+		t.Errorf("expected no-data message, got:\n%s", out)
+	}
+}
+
 func TestPrintStatsComparison_JSON(t *testing.T) {
 	st1 := store.Stats{RideCount: 10, TotalDistanceM: 100000}
 	st2 := store.Stats{RideCount: 8, TotalDistanceM: 80000}
