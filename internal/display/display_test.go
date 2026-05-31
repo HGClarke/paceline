@@ -545,6 +545,33 @@ func TestPrintStreamChart_SingleField_NoData(t *testing.T) {
 	}
 }
 
+func TestPrintStreamChart_Overlay(t *testing.T) {
+	power := 250
+	hr := 160
+	powerPoints := []parser.Stream{
+		{PowerW: &power},
+		{PowerW: &power},
+		{PowerW: &power},
+	}
+	hrPoints := []parser.Stream{
+		{HRBPM: &hr},
+		{HRBPM: &hr},
+		{HRBPM: &hr},
+	}
+	var buf bytes.Buffer
+	PrintStreamChart(&buf, [][]parser.Stream{powerPoints, hrPoints}, []string{"power", "hr"})
+	out := buf.String()
+	if !strings.Contains(out, "stream overlay") {
+		t.Errorf("expected caption 'stream overlay', got:\n%s", out)
+	}
+	if !strings.Contains(out, "power") {
+		t.Errorf("expected 'power' in legend, got:\n%s", out)
+	}
+	if !strings.Contains(out, "hr") {
+		t.Errorf("expected 'hr' in legend, got:\n%s", out)
+	}
+}
+
 func TestPrintStatsComparison_JSON(t *testing.T) {
 	st1 := store.Stats{RideCount: 10, TotalDistanceM: 100000}
 	st2 := store.Stats{RideCount: 8, TotalDistanceM: 80000}
