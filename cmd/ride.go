@@ -65,6 +65,10 @@ func init() {
 	// This flag MUST stay in sync with the streamCmd --field flag in stream.go.
 	rideCmd.Flags().StringSliceVar(&streamFields, "field", nil, "field(s) to chart: power, hr, speed, cadence, altitude")
 	_ = rideCmd.Flags().MarkHidden("field")
+	// Mirror --overlay on rideCmd so cobra parses it when `ride <id> stream --overlay`
+	// is invoked. This flag MUST stay in sync with the streamCmd --overlay flag in stream.go.
+	rideCmd.Flags().BoolVar(&streamOverlay, "overlay", false, "render all fields on a single overlaid chart")
+	_ = rideCmd.Flags().MarkHidden("overlay")
 }
 
 func runRide(cmd *cobra.Command, args []string) error {
