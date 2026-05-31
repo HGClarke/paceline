@@ -64,6 +64,14 @@ func runStream(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(os.Stderr, "warning: --overlay requires at least 2 --field values; rendering single chart")
 	}
 
+	noData := func(field string) {
+		msg := fmt.Sprintf("No %s data for ride #%d", field, currentRide.Position)
+		if available, err := s.AvailableFields(id); err == nil {
+			msg += fmt.Sprintf(". Available fields: %v", available)
+		}
+		fmt.Fprintln(os.Stderr, msg)
+	}
+
 	if streamOverlay {
 		allSeries := make([][]parser.Stream, 0, len(fields))
 		validFields := make([]string, 0, len(fields))
@@ -73,8 +81,7 @@ func runStream(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			if len(points) == 0 {
-				available, _ := s.AvailableFields(id)
-				fmt.Fprintf(os.Stderr, "No %s data for ride #%d. Available fields: %v\n", field, currentRide.Position, available)
+				noData(field)
 				continue
 			}
 			allSeries = append(allSeries, points)
@@ -87,20 +94,21 @@ func runStream(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	for i, field := range fields {
-		if i > 0 {
-			fmt.Fprintln(os.Stdout)
-		}
+	chartPrinted := false
+	for _, field := range fields {
 		points, err := s.GetStreams(id, field)
 		if err != nil {
 			return err
 		}
 		if len(points) == 0 {
-			available, _ := s.AvailableFields(id)
-			fmt.Fprintf(os.Stderr, "No %s data for ride #%d. Available fields: %v\n", field, currentRide.Position, available)
+			noData(field)
 			continue
 		}
+		if chartPrinted {
+			fmt.Fprintln(os.Stdout)
+		}
 		display.PrintStreamChart(os.Stdout, [][]parser.Stream{points}, []string{field})
+		chartPrinted = true
 	}
 	return nil
 }

@@ -50,7 +50,7 @@ $ paceline ride 1 stream --field=power
  325 ┤        ╭─────╯                                      ╰──
  303 ┤   ╭────╯
  281 ┤───╯
-                        power over time (3602 points)
+                               power
 ```
 
 In a terminal, `paceline rides` launches an **interactive TUI** — navigate with arrow keys, press `enter` to drill into a ride, `q` to quit.
@@ -62,7 +62,7 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 - **Three formats** — import `.fit`, `.gpx`, and `.tcx` files (Garmin, Wahoo, Strava exports, etc.)
 - **Idempotent imports** — re-importing the same file is always a safe no-op
 - **Interactive TUI** — browse and paginate rides with a keyboard-driven interface (auto-detected when running in a terminal)
-- **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time
+- **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time; overlay multiple fields on one chart with `--overlay`
 - **Aggregated stats** — totals by month, week, or year; year-over-year comparison with `--compare`
 - **Personal records** — all-time bests for distance, duration, elevation, speed, power, HR, and more
 - **Metric & imperial** — switch units with a single config command
@@ -180,15 +180,18 @@ paceline ride 3 --json
 Render an ASCII line chart for a ride's time-series sensor data.
 
 ```bash
-paceline ride 3 stream                        # auto-selects best available field
+paceline ride 3 stream                            # auto-selects best available field
 paceline ride 3 stream --field=hr
 paceline ride 3 stream --field=power
-paceline ride 3 stream --field=speed,altitude # multiple charts
+paceline ride 3 stream --field=speed,altitude     # separate colored charts
+paceline ride 3 stream --field=power --field=hr --overlay  # single overlaid chart
 ```
 
 Available fields: `power`, `hr`, `speed`, `cadence`, `altitude`
 
 When `--field` is omitted, the field is auto-selected by priority: **power → hr → speed**.
+
+All charts are rendered in color. Multiple fields without `--overlay` print separate charts sequentially. With `--overlay`, all fields are rendered on a single chart with a per-series color legend.
 
 ---
 

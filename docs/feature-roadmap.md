@@ -21,7 +21,7 @@
 | 9 | [HR zone analysis](#9-hr-zone-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
 | 10 | [Streak & consistency tracking](#10-streak--consistency-tracking) | 🟠 Medium | Medium | ⬜ Not Started |
 | 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium | ✅ Completed |
-| 12 | [Multi-field stream overlay](#12-multi-field-stream-overlay) | 🟠 Medium | Medium | ⬜ Not Started |
+| 12 | [Multi-field stream overlay](#12-multi-field-stream-overlay) | 🟠 Medium | Medium | ✅ Completed |
 | 13 | [AI ride analysis](#13-ai-ride-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
 | 14 | [Strava sync](#14-strava-sync) | 🟠 Medium | High | ⬜ Not Started |
 | 15 | [Route map in terminal](#15-route-map-in-terminal) | 🔵 Lower | High | ⬜ Not Started |
@@ -420,18 +420,20 @@ Single-field charts answer "what did my power look like?" Multi-field overlays a
 
 **Proposed commands**
 ```bash
-# Single field (existing behavior unchanged)
+# Single field (existing behavior unchanged, now with color)
 paceline ride 42 stream --field power
 
-# Overlay two fields on one chart
+# Multiple fields — separate colored charts (default)
 paceline ride 42 stream --field power --field hr
 
-# Three fields
-paceline ride 42 stream --field power --field hr --field cadence
+# Overlay two fields on one chart (opt-in with --overlay)
+paceline ride 42 stream --field power --field hr --overlay
 
-# All fields
-paceline ride 42 stream --field all
+# Three fields overlaid
+paceline ride 42 stream --field power --field hr --field cadence --overlay
 ```
+
+> **Status: Completed.** `--overlay` flag is live on `ride <id> stream`. Default behavior (multiple fields without `--overlay`) prints separate colored charts. With `--overlay`, all fields are rendered on a single overlaid chart via `asciigraph.PlotMany` with per-series color and a legend. All charts now use ANSI color; point count removed from captions.
 
 ---
 
