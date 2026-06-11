@@ -25,6 +25,8 @@ var (
 	ridesTo    string
 	ridesPage  int
 	ridesLimit int
+	ridesSort  string
+	ridesOrder string
 )
 
 func init() {
@@ -36,6 +38,8 @@ func init() {
 	ridesCmd.Flags().StringVar(&ridesTo, "to", "", "filter rides on or before this date (YYYY-MM-DD)")
 	ridesCmd.Flags().IntVar(&ridesPage, "page", 1, "page number")
 	ridesCmd.Flags().IntVar(&ridesLimit, "limit", 10, "results per page")
+	ridesCmd.Flags().StringVar(&ridesSort, "sort", "", "sort by: date (default), distance, duration, elevation, power, speed")
+	ridesCmd.Flags().StringVar(&ridesOrder, "order", "", "sort direction: desc (default), asc")
 }
 
 func runRides(cmd *cobra.Command, args []string) error {
@@ -71,6 +75,19 @@ func runRides(cmd *cobra.Command, args []string) error {
 	f.From, f.To, err = parseDateRange(ridesFrom, ridesTo)
 	if err != nil {
 		return err
+	}
+	if ridesSort != "" {
+		valid := map[string]bool{"date": true, "distance": true, "duration": true, "elevation": true, "power": true, "speed": true}
+		if !valid[ridesSort] {
+			return fmt.Errorf("invalid --sort %q: valid values are date, distance, duration, elevation, power, speed", ridesSort)
+		}
+		f.SortField = ridesSort
+	}
+	if ridesOrder != "" {
+		if ridesOrder != "asc" && ridesOrder != "desc" {
+			return fmt.Errorf("invalid --order %q: must be asc or desc", ridesOrder)
+		}
+		f.SortOrder = ridesOrder
 	}
 
 	loadPage := func(page int) ([]parser.Ride, int, error) {

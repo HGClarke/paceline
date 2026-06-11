@@ -11,13 +11,15 @@ import (
 )
 
 type RideFilters struct {
-	Year  *int
-	Month *int
-	Date  *time.Time
-	From  *time.Time
-	To    *time.Time
-	Page  int // 1-indexed
-	Limit int // default 10
+	Year      *int
+	Month     *int
+	Date      *time.Time
+	From      *time.Time
+	To        *time.Time
+	Page      int    // 1-indexed
+	Limit     int    // default 10
+	SortField string // "date", "distance", "duration", "elevation", "power", "speed"
+	SortOrder string // "asc", "desc" — default "desc"
 }
 
 // InsertRide inserts a ride and returns its new ID.
@@ -61,7 +63,42 @@ func (s *Store) GetRide(id int64) (parser.Ride, error) {
 	return r, err
 }
 
-// ListRides returns filtered rides (most recent first) and the total count.
+// sortColumn maps a SortField value to a SQL column name and whether NULLS LAST is needed.
+func sortColumn(field string) (col string, nullsLast bool) {
+	switch field {
+	case "distance":
+		return "distance_m", false
+	case "duration":
+		return "duration_s", false
+	case "elevation":
+		return "elevation_gain_m", false
+	case "power":
+		return "avg_power_w", true
+	case "speed":
+		return "avg_speed_mps", false
+	default: // "date" or ""
+		return "", false
+	}
+}
+
+// buildOrderBy returns the ORDER BY clause for the outer query.
+func buildOrderBy(f RideFilters) string {
+	col, nullsLast := sortColumn(f.SortField)
+	if col == "" {
+		return " ORDER BY recorded_at DESC, id DESC"
+	}
+	dir := "DESC"
+	if f.SortOrder == "asc" {
+		dir = "ASC"
+	}
+	clause := fmt.Sprintf(" ORDER BY %s %s", col, dir)
+	if nullsLast {
+		clause += " NULLS LAST"
+	}
+	return clause
+}
+
+// ListRides returns filtered rides and the total count.
 // Each ride's Position reflects its global rank (1 = most recent) across all rides,
 // even when filters are applied.
 func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
@@ -94,7 +131,7 @@ func (s *Store) ListRides(f RideFilters) ([]parser.Ride, int, error) {
 			elevation_gain_m, avg_speed_mps, max_speed_mps,
 			avg_hr_bpm, max_hr_bpm, avg_power_w, max_power_w,
 			calories, source_format, position
-		FROM ranked`+where+` ORDER BY recorded_at DESC, id DESC LIMIT ? OFFSET ?`, args...)
+		FROM ranked`+where+buildOrderBy(f)+` LIMIT ? OFFSET ?`, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list rides: %w", err)
 	}
