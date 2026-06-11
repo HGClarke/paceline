@@ -66,6 +66,7 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 - **Power curve** — mean maximal power (MMP) table and ASCII chart for any ride with power data; shows peak power at 5s, 30s, 1m, 5m, 10m, 20m, and 60m
 - **Interactive TUI** — browse and paginate rides with a keyboard-driven interface (auto-detected when running in a terminal)
 - **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time; overlay multiple fields on one chart with `--overlay`
+- **Route map** — render the GPS route as a Unicode Braille map in the terminal; colour-coded by elevation when altitude data is present
 - **Aggregated stats** — totals and averages by month, week, or year; year-over-year comparison with `--compare`
 - **Personal records** — all-time bests for distance, duration, elevation, speed, power, HR, and more
 - **Metric & imperial** — switch units with a single config command
@@ -243,6 +244,25 @@ Power Curve — Ride 3 (2025-04-05)
 ```
 
 Durations longer than the ride are automatically omitted from the table and chart.
+
+---
+
+### `paceline ride <position> route`
+
+Render the GPS route as a Braille map in the terminal. Requires GPS data (lat/lon streams).
+
+```bash
+paceline ride 3 route
+```
+
+The map is drawn using Unicode Braille characters for sub-character resolution, with an ANSI colour gradient from dark green (low elevation) to red (high elevation) when altitude data is present. A legend is printed below the map.
+
+**Flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--width` | `78` | Character width of the map |
+| `--height` | `28` | Character height of the map |
 
 ---
 

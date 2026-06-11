@@ -25,7 +25,7 @@
 | 12  | [Multi-field stream overlay](#12-multi-field-stream-overlay)                             | 🟠 Medium | Medium | ✅ Completed   |
 | 13  | [AI ride analysis](#13-ai-ride-analysis)                                                 | 🟠 Medium | Medium | ⬜ Not Started |
 | 14  | [Strava sync](#14-strava-sync)                                                           | 🟠 Medium | High   | ⬜ Not Started |
-| 15  | [Route map in terminal](#15-route-map-in-terminal)                                       | 🔵 Lower  | High   | ⬜ Not Started |
+| 15  | [Route map in terminal](#15-route-map-in-terminal)                                       | 🔵 Lower  | High   | ✅ Completed   |
 | 16  | [FTP-based training metrics (NP / IF / TSS)](#16-ftp-based-training-metrics-np--if--tss) | 🔵 Lower  | High   | ⬜ Not Started |
 | 17  | [Watch folder / auto-import](#17-watch-folder--auto-import)                              | 🔵 Lower  | High   | ⬜ Not Started |
 | 18  | [Homebrew installation](#18-homebrew-installation)                                       | 🔵 Lower  | Low    | ⬜ Not Started |
@@ -630,6 +630,8 @@ paceline ride 42 route --width 120 --height 40
 #     ·····
 #  (S = start, dots = route path)
 ```
+
+> **Status: Completed.** `ride <id> route` is live. Renders a Braille map with Mercator projection and elevation gradient colouring (dark green for low elevation, red for high elevation). Configurable `--width` and `--height` flags control map dimensions. GPS points are queried from the streams table; altitude data is used for gradient colouring when available.
 
 ---
 
