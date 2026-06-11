@@ -10,10 +10,11 @@ Import `.fit`, `.gpx`, or `.tcx` files, then browse your rides, inspect stats, a
 
 ```
 $ paceline import ~/rides/
+Importing 3 files...
   imported: 2026-05-20_morning.fit (id=1, 3602 points)
   imported: 2026-05-18_endurance.fit (id=2, 7514 points)
   imported: 2026-05-15_intervals.fit (id=3, 4230 points)
-3 imported, 0 skipped
+Done: 3 imported, 0 already exist, 0 errors
 ```
 
 ```
@@ -60,10 +61,12 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 ## Features
 
 - **Three formats** — import `.fit`, `.gpx`, and `.tcx` files (Garmin, Wahoo, Strava exports, etc.)
-- **Idempotent imports** — re-importing the same file is always a safe no-op
+- **Bulk import** — import an entire directory recursively; idempotent, skips duplicates automatically; `--dry-run` to preview before committing
+- **Ride sorting** — sort the rides list by distance, duration, elevation, power, speed, or date with `--sort` and `--order`
+- **Power curve** — mean maximal power (MMP) table and ASCII chart for any ride with power data; shows peak power at 5s, 30s, 1m, 5m, 10m, 20m, and 60m
 - **Interactive TUI** — browse and paginate rides with a keyboard-driven interface (auto-detected when running in a terminal)
 - **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time; overlay multiple fields on one chart with `--overlay`
-- **Aggregated stats** — totals by month, week, or year; year-over-year comparison with `--compare`
+- **Aggregated stats** — totals and averages by month, week, or year; year-over-year comparison with `--compare`
 - **Personal records** — all-time bests for distance, duration, elevation, speed, power, HR, and more
 - **Metric & imperial** — switch units with a single config command
 - **JSON output** — pipe any command with `--json` for scripting and integrations
@@ -114,13 +117,31 @@ paceline ride 1 stream --field=hr
 Parse and store ride files into the local database.
 
 ```bash
+# Single file
 paceline import morning_ride.fit
-paceline import ~/Downloads/strava_export/   # imports all files in the directory
+
+# Entire directory (recursive by default)
+paceline import ~/Downloads/strava_export/
+
+# Non-recursive — top-level files only
+paceline import ~/Downloads/strava_export/ --no-recursive
+
+# Preview what would be imported without actually importing
+paceline import ~/Downloads/strava_export/ --dry-run
 ```
 
 - Supports `.fit`, `.gpx`, `.tcx`
-- Idempotent: re-importing the same filename is a no-op
+- Recursively finds all supported files in subdirectories by default
+- Idempotent: re-importing the same filename is always a no-op
+- Summary shows `imported`, `already exist`, and `errors` counts separately
 - Skipped files (unsupported format, parse error) are reported on stderr
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--no-recursive` | Only read top-level files; do not descend into subdirectories |
+| `--dry-run` | Show how many files would be imported without importing anything |
 
 ---
 
@@ -129,14 +150,29 @@ paceline import ~/Downloads/strava_export/   # imports all files in the director
 List rides, newest first. Launches an interactive TUI when running in a terminal.
 
 ```bash
-paceline rides                        # 10 most recent
-paceline rides --year=2025            # all rides in 2025
-paceline rides --year=2025 --month=6  # June 2025 only
-paceline rides --date=2025-06-15      # a specific day
+paceline rides                          # 10 most recent
+paceline rides --year=2025              # all rides in 2025
+paceline rides --year=2025 --month=6    # June 2025 only
+paceline rides --date=2025-06-15        # a specific day
 paceline rides --from 2025-01-01 --to 2025-03-31
-paceline rides --from 2025-06-01               # on or after
-paceline rides --to 2025-06-30                 # on or before
-paceline rides --page=2 --limit=20   # pagination
+paceline rides --from 2025-06-01                 # on or after
+paceline rides --to 2025-06-30                   # on or before
+paceline rides --page=2 --limit=20      # pagination
+
+# Sorting
+paceline rides --sort distance          # longest first (desc by default)
+paceline rides --sort duration
+paceline rides --sort elevation
+paceline rides --sort power             # avg power; rides without power sort last
+paceline rides --sort speed
+paceline rides --sort date              # default behavior
+
+# Sort direction
+paceline rides --sort distance --order asc   # shortest first
+paceline rides --sort distance --order desc  # longest first (default)
+
+# Combine with filters
+paceline rides --year 2025 --sort elevation --limit 5
 ```
 
 **TUI controls (interactive mode):**
@@ -161,6 +197,8 @@ paceline rides --page=2 --limit=20   # pagination
 | `--to` | — | Filter rides on or before this date `YYYY-MM-DD` |
 | `--page` | `1` | Page number |
 | `--limit` | `10` | Results per page |
+| `--sort` | `date` | Sort field: `date`, `distance`, `duration`, `elevation`, `power`, `speed` |
+| `--order` | `desc` | Sort direction: `desc` or `asc` |
 
 ---
 
@@ -172,6 +210,39 @@ Show the full summary for a single ride. `<position>` is the `#` number shown in
 paceline ride 3
 paceline ride 3 --json
 ```
+
+---
+
+### `paceline ride <position> power-curve`
+
+Show the mean maximal power (MMP) curve for a ride. Requires power stream data.
+
+```bash
+paceline ride 3 power-curve
+```
+
+Output: a table of peak power at 7 canonical durations, followed by an ASCII chart sampled at ~50 log-spaced intervals for a smooth exponential curve.
+
+```
+Power Curve — Ride 3 (2025-04-05)
+
+  DURATION │ POWER
+  ─────────┼───────
+  5s       │ 812 W
+  30s      │ 634 W
+  1 min    │ 521 W
+  5 min    │ 380 W
+  10 min   │ 342 W
+  20 min   │ 298 W
+  60 min   │ 261 W
+
+ 812 ┤╮
+ ...
+      5s  30s  1m   5m   10m  20m  1h
+               power curve
+```
+
+Durations longer than the ride are automatically omitted from the table and chart.
 
 ---
 

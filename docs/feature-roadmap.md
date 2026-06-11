@@ -13,11 +13,11 @@
 | 1 | [Unit preferences (metric / imperial)](#1-unit-preferences-metric--imperial) | 🔴 High | Low | ✅ Completed |
 | 2 | [Personal records](#2-personal-records) | 🔴 High | Low | ✅ Completed |
 | 3 | [Date-range filtering](#3-date-range-filtering) | 🔴 High | Low | ✅ Completed |
-| 4 | [Ride sorting](#4-ride-sorting) | 🔴 High | Low | ⬜ Not Started |
-| 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium | ⬜ Not Started |
-| 6 | [Power curve](#6-power-curve) | 🟡 High | Medium | ⬜ Not Started |
+| 4 | [Ride sorting](#4-ride-sorting) | 🔴 High | Low | ✅ Completed |
+| 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium | ✅ Completed |
+| 6 | [Power curve](#6-power-curve) | 🟡 High | Medium | ✅ Completed |
 | 7 | [Ride naming & notes](#7-ride-naming--notes) | 🟡 High | Medium | ⬜ Not Started |
-| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium | ⬜ Not Started |
+| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium | ✅ Completed |
 | 9 | [HR zone analysis](#9-hr-zone-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
 | 10 | [Streak & consistency tracking](#10-streak--consistency-tracking) | 🟠 Medium | Medium | ⬜ Not Started |
 | 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium | ✅ Completed |
@@ -152,6 +152,8 @@ paceline rides --sort distance --order desc   # default
 paceline rides --year 2025 --sort elevation --limit 5
 ```
 
+> **Status: Completed.** `--sort` and `--order` flags are live on `rides`. Valid sort fields: `date` (default), `distance`, `duration`, `elevation`, `power`, `speed`. Power sorts with `NULLS LAST` so rides without a power meter appear at the bottom. The inner `ROW_NUMBER()` window always uses chronological order so ride position numbers are unaffected by the current sort.
+
 ---
 
 ## 🟡 High Priority, Medium Effort
@@ -190,6 +192,8 @@ paceline stats --year 2025
 paceline stats --week 22
 paceline stats --from 2025-01-01 --to 2025-03-31  # (once #3 lands)
 ```
+
+> **Status: Completed.** `stats` output now includes avg and max values for speed, power, and HR. Metrics are conditionally rendered when the underlying data is present (power and HR are optional). All values respect the configured unit preference.
 
 ---
 
@@ -245,6 +249,8 @@ paceline records power-curve
 # Filtered to a period
 paceline records power-curve --year 2025
 ```
+
+> **Status: Completed.** `ride <id> power-curve` is live. Computes MMP via a sliding window algorithm over the power stream using elapsed time (handles recording gaps correctly). Table shows 7 canonical durations (5s–60min); chart uses ~50 log-spaced samples for a smooth exponential curve. Durations exceeding ride length are automatically omitted.
 
 ---
 
@@ -308,6 +314,8 @@ paceline import ~/Downloads/ --no-recursive
 # Dry-run to preview what would be imported
 paceline import ~/Downloads/garmin-activities/ --dry-run
 ```
+
+> **Status: Completed.** `import` now accepts a directory path and recurses into subdirectories by default. `--no-recursive` limits to top-level files only. `--dry-run` reports new vs. already-imported counts without writing to the database. Summary output distinguishes `imported`, `already exist`, and `errors`. Hidden files and unsupported extensions are silently skipped.
 
 ---
 
