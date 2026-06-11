@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/HGClarke/paceline/internal/display"
 	"github.com/HGClarke/paceline/internal/store"
@@ -12,6 +14,7 @@ import (
 var (
 	routeWidth  int
 	routeHeight int
+	routeOpen   bool
 )
 
 var routeCmd = &cobra.Command{
@@ -24,6 +27,7 @@ var routeCmd = &cobra.Command{
 func init() {
 	routeCmd.Flags().IntVar(&routeWidth, "width", 78, "character width of the map")
 	routeCmd.Flags().IntVar(&routeHeight, "height", 28, "character height of the map")
+	routeCmd.Flags().BoolVar(&routeOpen, "open", false, "open route in browser on OpenStreetMap")
 }
 
 func runRoute(_ *cobra.Command, _ []string) error {
@@ -48,5 +52,53 @@ func runRoute(_ *cobra.Command, _ []string) error {
 	}
 
 	display.PrintRoute(os.Stdout, pts, routeWidth, routeHeight, currentRide.Filename)
+
+	if routeOpen {
+		url := buildOSMURL(pts)
+		fmt.Fprintf(os.Stdout, "  Opening %s\n", url)
+		if err := openBrowser(url); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not open browser: %v\n", err)
+		}
+	}
 	return nil
+}
+
+// buildOSMURL returns an OpenStreetMap bounding-box URL for the given GPS points.
+// Returns "" if pts is empty.
+func buildOSMURL(pts []store.GPSPoint) string {
+	if len(pts) == 0 {
+		return ""
+	}
+	minLat, maxLat := pts[0].Lat, pts[0].Lat
+	minLon, maxLon := pts[0].Lon, pts[0].Lon
+	for _, p := range pts[1:] {
+		if p.Lat < minLat {
+			minLat = p.Lat
+		}
+		if p.Lat > maxLat {
+			maxLat = p.Lat
+		}
+		if p.Lon < minLon {
+			minLon = p.Lon
+		}
+		if p.Lon > maxLon {
+			maxLon = p.Lon
+		}
+	}
+	return fmt.Sprintf("https://www.openstreetmap.org/?bbox=%.6f,%.6f,%.6f,%.6f",
+		minLon, minLat, maxLon, maxLat)
+}
+
+// openBrowser opens url in the system default browser.
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
 }
