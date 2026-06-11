@@ -713,3 +713,125 @@ func TestPrintRoute_SinglePoint(t *testing.T) {
 		t.Errorf("expected 'test.fit' in output, got:\n%s", out)
 	}
 }
+
+func TestHaversineM_LondonParis(t *testing.T) {
+	// London (51.5074, -0.1278) to Paris (48.8566, 2.3522) ≈ 340 km
+	dist := haversineM(51.5074, -0.1278, 48.8566, 2.3522)
+	if dist < 330000 || dist > 350000 {
+		t.Errorf("haversineM London-Paris = %.0f m, expected ~340000", dist)
+	}
+}
+
+func TestHaversineM_SamePoint(t *testing.T) {
+	dist := haversineM(51.50, -0.13, 51.50, -0.13)
+	if dist != 0 {
+		t.Errorf("haversineM same point = %f, want 0", dist)
+	}
+}
+
+func TestFormatElevDist_Metric(t *testing.T) {
+	got := formatElevDist(50000, "metric")
+	if got != "50.0km" {
+		t.Errorf("formatElevDist(50000, metric) = %q, want %q", got, "50.0km")
+	}
+}
+
+func TestFormatElevDist_Imperial(t *testing.T) {
+	// 1609.344 m = exactly 1 mile
+	got := formatElevDist(1609.344, "imperial")
+	if got != "1.0mi" {
+		t.Errorf("formatElevDist(1609.344, imperial) = %q, want %q", got, "1.0mi")
+	}
+}
+
+func TestElevXLabels_Metric(t *testing.T) {
+	labels := elevXLabels(100000, 100, "metric") // 100 km
+	if !strings.Contains(labels, "0.0km") {
+		t.Errorf("expected '0.0km' in labels, got: %q", labels)
+	}
+	if !strings.Contains(labels, "100.0km") {
+		t.Errorf("expected '100.0km' in labels, got: %q", labels)
+	}
+}
+
+func TestElevXLabels_Imperial(t *testing.T) {
+	// 80467.2 m = 50 miles
+	labels := elevXLabels(80467.2, 100, "imperial")
+	if !strings.Contains(labels, "0.0mi") {
+		t.Errorf("expected '0.0mi' in labels, got: %q", labels)
+	}
+	if !strings.Contains(labels, "50.0mi") {
+		t.Errorf("expected '50.0mi' in labels, got: %q", labels)
+	}
+}
+
+func TestElevXLabels_ZeroDistance(t *testing.T) {
+	got := elevXLabels(0, 1, "metric")
+	if got != "" {
+		t.Errorf("elevXLabels zero distance = %q, want empty string", got)
+	}
+}
+
+func TestPrintElevationProfile_NoGPS(t *testing.T) {
+	var buf bytes.Buffer
+	PrintElevationProfile(&buf, nil, "metric", 1, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
+	out := buf.String()
+	if !strings.Contains(out, "Elevation Profile") {
+		t.Errorf("expected header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "No altitude data") {
+		t.Errorf("expected no-data message for nil pts, got:\n%s", out)
+	}
+}
+
+func TestPrintElevationProfile_NoAltitude(t *testing.T) {
+	var buf bytes.Buffer
+	pts := []store.GPSPoint{
+		{Lat: 51.50, Lon: -0.13, AltitudeM: nil},
+		{Lat: 51.51, Lon: -0.12, AltitudeM: nil},
+	}
+	PrintElevationProfile(&buf, pts, "metric", 1, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
+	out := buf.String()
+	if !strings.Contains(out, "No altitude data") {
+		t.Errorf("expected no-data message, got:\n%s", out)
+	}
+}
+
+func TestPrintElevationProfile_WithData_Metric(t *testing.T) {
+	alt0, alt1, alt2, alt3 := 100.0, 150.0, 200.0, 120.0
+	pts := []store.GPSPoint{
+		{ElapsedS: 0, Lat: 51.500, Lon: -0.130, AltitudeM: &alt0},
+		{ElapsedS: 60, Lat: 51.509, Lon: -0.130, AltitudeM: &alt1},
+		{ElapsedS: 120, Lat: 51.518, Lon: -0.130, AltitudeM: &alt2},
+		{ElapsedS: 180, Lat: 51.527, Lon: -0.130, AltitudeM: &alt3},
+	}
+	var buf bytes.Buffer
+	PrintElevationProfile(&buf, pts, "metric", 3, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
+	out := buf.String()
+	for _, want := range []string{
+		"Elevation Profile", "Ride 3", "2025-05-10",
+		"elevation (m)",
+		"0.0km",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, out)
+		}
+	}
+}
+
+func TestPrintElevationProfile_Imperial(t *testing.T) {
+	alt0, alt1 := 100.0, 200.0
+	pts := []store.GPSPoint{
+		{ElapsedS: 0, Lat: 51.500, Lon: -0.130, AltitudeM: &alt0},
+		{ElapsedS: 60, Lat: 51.509, Lon: -0.130, AltitudeM: &alt1},
+	}
+	var buf bytes.Buffer
+	PrintElevationProfile(&buf, pts, "imperial", 1, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
+	out := buf.String()
+	if !strings.Contains(out, "elevation (ft)") {
+		t.Errorf("expected 'elevation (ft)' in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "mi") {
+		t.Errorf("expected 'mi' in X-axis labels, got:\n%s", out)
+	}
+}
