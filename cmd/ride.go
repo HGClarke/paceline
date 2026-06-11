@@ -77,6 +77,10 @@ func init() {
 	_ = rideCmd.Flags().MarkHidden("width")
 	rideCmd.Flags().IntVar(&routeHeight, "height", 28, "character height of the map")
 	_ = rideCmd.Flags().MarkHidden("height")
+	// Mirror --open on rideCmd so cobra parses it when `ride <id> route --open`
+	// is invoked. This flag MUST stay in sync with the routeCmd --open flag in route.go.
+	rideCmd.Flags().BoolVar(&routeOpen, "open", false, "open route in browser on OpenStreetMap")
+	_ = rideCmd.Flags().MarkHidden("open")
 }
 
 func runRide(cmd *cobra.Command, args []string) error {
