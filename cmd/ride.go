@@ -71,6 +71,12 @@ func init() {
 	// is invoked. This flag MUST stay in sync with the streamCmd --overlay flag in stream.go.
 	rideCmd.Flags().BoolVar(&streamOverlay, "overlay", false, "render all fields on a single overlaid chart")
 	_ = rideCmd.Flags().MarkHidden("overlay")
+	// Mirror --width/--height on rideCmd so cobra parses them when `ride <id> route --width=...`
+	// is invoked. These MUST stay in sync with the routeCmd flags in route.go.
+	rideCmd.Flags().IntVar(&routeWidth, "width", 78, "character width of the map")
+	_ = rideCmd.Flags().MarkHidden("width")
+	rideCmd.Flags().IntVar(&routeHeight, "height", 28, "character height of the map")
+	_ = rideCmd.Flags().MarkHidden("height")
 }
 
 func runRide(cmd *cobra.Command, args []string) error {
