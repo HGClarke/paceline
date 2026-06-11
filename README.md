@@ -253,6 +253,7 @@ Render the GPS route as a Braille map in the terminal. Requires GPS data (lat/lo
 
 ```bash
 paceline ride 3 route
+paceline ride 3 route --open     # render map and open GPS track on openstreetmap.org
 ```
 
 The map is drawn using Unicode Braille characters for sub-character resolution, with an ANSI colour gradient from dark green (low elevation) to red (high elevation) when altitude data is present. A legend is printed below the map.
@@ -263,6 +264,7 @@ The map is drawn using Unicode Braille characters for sub-character resolution, 
 |------|---------|-------------|
 | `--width` | `78` | Character width of the map |
 | `--height` | `28` | Character height of the map |
+| `--open` | false | Open the route in the browser on OpenStreetMap |
 
 ---
 

@@ -29,6 +29,7 @@
 | 16  | [FTP-based training metrics (NP / IF / TSS)](#16-ftp-based-training-metrics-np--if--tss) | 🔵 Lower  | High   | ⬜ Not Started |
 | 17  | [Watch folder / auto-import](#17-watch-folder--auto-import)                              | 🔵 Lower  | High   | ⬜ Not Started |
 | 18  | [Homebrew installation](#18-homebrew-installation)                                       | 🔵 Lower  | Low    | ⬜ Not Started |
+| 19  | [Route → OpenStreetMap](#19-route--openstreetmap)                                        | 🔵 Lower  | Low    | ✅ Completed   |
 
 
 ---
@@ -743,6 +744,22 @@ brew upgrade paceline
 # Or in one shot (tap + install)
 brew install HGClarke/paceline/paceline
 ```
+
+---
+
+### 19. Route → OpenStreetMap
+
+**Command:** `paceline ride <n> route --open`
+
+**Problem:** The Braille map in the terminal is useful for a quick shape, but lacks street names, elevation contours, and interactivity.
+
+**Solution:** A `--open` flag on `ride <n> route` computes the GPS bounding box and opens `https://www.openstreetmap.org/?bbox=minLon,minLat,maxLon,maxLat` in the system default browser. The terminal map is printed first so the command still works in non-GUI environments; the browser is opened as a bonus step.
+
+```bash
+paceline ride 3 route --open
+```
+
+> **Status: Completed.** `--open` flag is live on `ride <n> route`. Constructs an OSM bounding-box URL from the ride's GPS points and opens it with the OS default browser (`open` on macOS, `xdg-open` on Linux, `rundll32` on Windows). Prints the URL to stdout before opening.
 
 ---
 
