@@ -60,6 +60,7 @@ var rideCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(rideCmd)
 	rideCmd.AddCommand(streamCmd)
+	rideCmd.AddCommand(powerCurveCmd)
 	// Mirror --field on rideCmd so cobra parses it when `ride <id> stream --field=...`
 	// is invoked (cobra routes through rideCmd since <id> is numeric, not a subcommand name).
 	// This flag MUST stay in sync with the streamCmd --field flag in stream.go.
