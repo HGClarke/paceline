@@ -67,6 +67,7 @@ In a terminal, `paceline rides` launches an **interactive TUI** — navigate wit
 - **Interactive TUI** — browse and paginate rides with a keyboard-driven interface (auto-detected when running in a terminal)
 - **ASCII stream charts** — plot power, heart rate, speed, cadence, or altitude over time; overlay multiple fields on one chart with `--overlay`
 - **Route map** — render the GPS route as a Unicode Braille map in the terminal; colour-coded by elevation when altitude data is present
+- **Elevation profile** — ASCII chart of altitude vs distance for any GPS-equipped ride; X-axis shows distance in km or miles; supports metric and imperial units
 - **Aggregated stats** — totals and averages by month, week, or year; year-over-year comparison with `--compare`
 - **Personal records** — all-time bests for distance, duration, elevation, speed, power, HR, and more
 - **Metric & imperial** — switch units with a single config command
@@ -265,6 +266,30 @@ The map is drawn using Unicode Braille characters for sub-character resolution, 
 | `--width` | `78` | Character width of the map |
 | `--height` | `28` | Character height of the map |
 | `--open` | false | Open the route in the browser on OpenStreetMap |
+
+---
+
+### `paceline ride <position> elevation`
+
+Render an ASCII elevation profile (altitude vs distance) for a ride. Requires GPS data (lat/lon + altitude streams).
+
+```bash
+paceline ride 3 elevation
+```
+
+The Y-axis shows altitude in metres (metric) or feet (imperial) based on your unit config. The X-axis is labelled with cumulative distance computed from GPS coordinates using the Haversine formula.
+
+```
+Elevation Profile — Ride 3 (2025-04-05)
+
+ 412 ┤                                      ╭╮
+ 390 ┤                          ╭──╮   ╭────╯╰────╮
+ 368 ┤                   ╭──────╯  ╰───╯          ╰──╮
+ 347 ┤              ╭────╯                            ╰────╮
+ 325 ┤        ╭─────╯                                      ╰──
+               elevation (m)
+         0.0km       20.0km       40.0km       60.0km   80.0km
+```
 
 ---
 

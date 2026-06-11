@@ -30,6 +30,7 @@
 | 17  | [Watch folder / auto-import](#17-watch-folder--auto-import)                              | 🔵 Lower  | High   | ⬜ Not Started |
 | 18  | [Homebrew installation](#18-homebrew-installation)                                       | 🔵 Lower  | Low    | ⬜ Not Started |
 | 19  | [Route → OpenStreetMap](#19-route--openstreetmap)                                        | 🔵 Lower  | Low    | ✅ Completed   |
+| 20  | [Elevation profile](#20-elevation-profile)                                               | 🔵 Lower  | Low    | ✅ Completed   |
 
 
 ---
@@ -760,6 +761,22 @@ paceline ride 3 route --open
 ```
 
 > **Status: Completed.** `--open` flag is live on `ride <n> route`. Constructs an OSM bounding-box URL from the ride's GPS points and opens it with the OS default browser (`open` on macOS, `xdg-open` on Linux, `rundll32` on Windows). Prints the URL to stdout before opening.
+
+---
+
+### 20. Elevation Profile
+
+**Command:** `paceline ride <n> elevation`
+
+**Problem:** `ride <n> stream --field=altitude` shows altitude over *time*, but cyclists think in terms of altitude over *distance* — knowing a climb starts at km 25 and peaks at km 42 is more useful than knowing it starts at minute 45.
+
+**Solution:** A dedicated `elevation` subcommand plots altitude against cumulative GPS distance (computed via Haversine), with a distance-labelled X-axis. Units follow the user's `config set units` preference.
+
+```bash
+paceline ride 3 elevation
+```
+
+> **Status: Completed.** `ride <n> elevation` is live. Reads GPS points from the streams table, computes cumulative distance via Haversine, and renders an `asciigraph` altitude chart with X-axis labels at 0%, 25%, 50%, 75%, and 100% of total distance. Altitude is shown in metres (metric) or feet (imperial).
 
 ---
 
