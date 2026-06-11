@@ -419,6 +419,13 @@ func (s *Store) queryMaxAltitudeRecord(where string, args []any) (*PersonalRecor
 	return &PersonalRecord{RawValue: val.Float64, Date: date.Time}, nil
 }
 
+// FileExists reports whether a ride with the given filename has already been imported.
+func (s *Store) FileExists(filename string) (bool, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM rides WHERE filename = ?`, filename).Scan(&n)
+	return n > 0, err
+}
+
 // DeleteRide deletes a ride and its associated stream data by ID.
 // Returns an error if no ride with the given ID exists.
 // Streams are deleted first to satisfy the FK constraint before removing the ride.

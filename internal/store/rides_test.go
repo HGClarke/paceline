@@ -1259,3 +1259,40 @@ func TestGetStats_NewFields_MixedSensorData(t *testing.T) {
 		t.Errorf("AvgHRBPM: got %v, want nil", *st.AvgHRBPM)
 	}
 }
+
+func TestFileExists_NotFound(t *testing.T) {
+	s := openTestStore(t)
+	exists, err := s.FileExists("nonexistent.fit")
+	if err != nil {
+		t.Fatalf("FileExists: %v", err)
+	}
+	if exists {
+		t.Error("expected false for file not in DB, got true")
+	}
+}
+
+func TestFileExists_Found(t *testing.T) {
+	s := openTestStore(t)
+	insertTestRide(t, s, "myride.gpx")
+
+	exists, err := s.FileExists("myride.gpx")
+	if err != nil {
+		t.Fatalf("FileExists: %v", err)
+	}
+	if !exists {
+		t.Error("expected true for existing file, got false")
+	}
+}
+
+func TestFileExists_PartialNameDoesNotMatch(t *testing.T) {
+	s := openTestStore(t)
+	insertTestRide(t, s, "myride.gpx")
+
+	exists, err := s.FileExists("myride")
+	if err != nil {
+		t.Fatalf("FileExists: %v", err)
+	}
+	if exists {
+		t.Error("expected false for partial filename, got true")
+	}
+}

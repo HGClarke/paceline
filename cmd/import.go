@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +12,9 @@ import (
 	"github.com/HGClarke/paceline/internal/store"
 	"github.com/spf13/cobra"
 )
+
+var importNoRecursive bool
+var importDryRun bool
 
 var importCmd = &cobra.Command{
 	Use:   "import <file|directory>",
@@ -20,7 +25,11 @@ var importCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(importCmd)
+	importCmd.Flags().BoolVar(&importNoRecursive, "no-recursive", false, "do not recurse into subdirectories")
+	importCmd.Flags().BoolVar(&importDryRun, "dry-run", false, "show what would be imported without importing")
 }
+
+var errAlreadyExists = errors.New("already exists")
 
 func runImport(cmd *cobra.Command, args []string) error {
 	path := args[0]
@@ -41,36 +50,81 @@ func runImport(cmd *cobra.Command, args []string) error {
 
 	var files []string
 	if info.IsDir() {
-		entries, err := os.ReadDir(path)
+		files, err = collectFiles(path, !importNoRecursive)
 		if err != nil {
 			return err
 		}
-		for _, e := range entries {
-			if !e.IsDir() {
-				files = append(files, filepath.Join(path, e.Name()))
-			}
+		if importDryRun {
+			return runDryRun(s, files)
 		}
+		fmt.Printf("Importing %d files...\n", len(files))
 	} else {
+		if importDryRun {
+			return runDryRun(s, []string{path})
+		}
 		files = []string{path}
 	}
 
-	var imported, skipped int
-	var errs []string
-
+	var imported, alreadyExist, errs int
 	for _, f := range files {
-		if err := importFile(s, f); err != nil {
-			skipped++
-			errs = append(errs, fmt.Sprintf("%s — %v", filepath.Base(f), err))
-		} else {
+		switch err := importFile(s, f); {
+		case err == nil:
 			imported++
+		case errors.Is(err, errAlreadyExists):
+			alreadyExist++
+		default:
+			errs++
+			fmt.Fprintf(os.Stderr, "  error: %s — %v\n", filepath.Base(f), err)
 		}
 	}
 
-	fmt.Printf("%d imported, %d skipped\n", imported, skipped)
-	for _, e := range errs {
-		fmt.Fprintf(os.Stderr, "  skipped: %s\n", e)
-	}
+	fmt.Printf("Done: %d imported, %d already exist, %d errors\n", imported, alreadyExist, errs)
 	return nil
+}
+
+func runDryRun(s *store.Store, files []string) error {
+	fmt.Println("Dry run — no files will be imported.")
+	var newCount, existCount int
+	for _, f := range files {
+		exists, err := s.FileExists(filepath.Base(f))
+		if err != nil {
+			return fmt.Errorf("check %s: %w", filepath.Base(f), err)
+		}
+		if exists {
+			existCount++
+		} else {
+			newCount++
+		}
+	}
+	fmt.Printf("Found %d files (%d new, %d already exist)\n", len(files), newCount, existCount)
+	return nil
+}
+
+func collectFiles(root string, recursive bool) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			if !recursive && path != root {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasPrefix(d.Name(), ".") {
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if ext == ".fit" || ext == ".gpx" || ext == ".tcx" {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
 }
 
 func importFile(s *store.Store, path string) error {
@@ -105,7 +159,7 @@ func importFile(s *store.Store, path string) error {
 	}
 	if id == 0 {
 		fmt.Printf("  already imported: %s\n", filename)
-		return nil
+		return errAlreadyExists
 	}
 
 	for i := range streams {
