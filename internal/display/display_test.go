@@ -518,6 +518,52 @@ func TestPrintStatsComparison_ZeroBase(t *testing.T) {
 	}
 }
 
+func TestPrintPowerCurve_NoPower(t *testing.T) {
+	var buf bytes.Buffer
+	PrintPowerCurve(&buf, store.PowerCurve{}, 1, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
+	out := buf.String()
+	if !strings.Contains(out, "Power Curve") {
+		t.Errorf("expected header in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "No power data") {
+		t.Errorf("expected no-data message, got:\n%s", out)
+	}
+}
+
+func TestPrintPowerCurve_WithData(t *testing.T) {
+	curve := store.PowerCurve{
+		Table: []store.PowerCurvePoint{
+			{DurationS: 5, PowerW: 812},
+			{DurationS: 30, PowerW: 634},
+			{DurationS: 60, PowerW: 521},
+			{DurationS: 300, PowerW: 380},
+		},
+		Chart: []store.PowerCurvePoint{
+			{DurationS: 5, PowerW: 812},
+			{DurationS: 10, PowerW: 750},
+			{DurationS: 20, PowerW: 700},
+			{DurationS: 30, PowerW: 634},
+		},
+	}
+	var buf bytes.Buffer
+	PrintPowerCurve(&buf, curve, 42, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
+	out := buf.String()
+
+	for _, want := range []string{
+		"Power Curve", "Ride 42", "2025-05-10",
+		"DURATION", "POWER",
+		"5s", "812 W",
+		"30s", "634 W",
+		"1 min", "521 W",
+		"5 min", "380 W",
+		"power curve",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, out)
+		}
+	}
+}
+
 func TestPrintStreamChart_SingleField(t *testing.T) {
 	power := 250
 	points := []parser.Stream{
