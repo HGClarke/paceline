@@ -14,6 +14,15 @@ import (
 	"github.com/olekukonko/tablewriter/tw"
 )
 
+// asciigraphWidth is the output width passed to asciigraph for all charts.
+// asciigraphDataWidth is the columns available for data after the Y-axis gutter (~9 chars).
+// asciigraphGutter is the 9-space prefix to align X-axis labels under the data area.
+const (
+	asciigraphWidth     = 80
+	asciigraphDataWidth = 71
+	asciigraphGutter    = "         "
+)
+
 var fieldColor = map[string]asciigraph.AnsiColor{
 	"power":    asciigraph.Red,
 	"hr":       asciigraph.Blue,
@@ -34,7 +43,7 @@ func PrintStreamChart(w io.Writer, allSeries [][]parser.Stream, fields []string)
 		}
 		chart := asciigraph.Plot(data,
 			asciigraph.Height(15),
-			asciigraph.Width(80),
+			asciigraph.Width(asciigraphWidth),
 			asciigraph.Caption(fields[0]),
 			asciigraph.SeriesColors(fieldColor[fields[0]]),
 		)
@@ -50,7 +59,7 @@ func PrintStreamChart(w io.Writer, allSeries [][]parser.Stream, fields []string)
 	}
 	chart := asciigraph.PlotMany(seriesData,
 		asciigraph.Height(15),
-		asciigraph.Width(80),
+		asciigraph.Width(asciigraphWidth),
 		asciigraph.Caption("stream overlay"),
 		asciigraph.SeriesLegends(fields...),
 		asciigraph.SeriesColors(colors...),
@@ -123,7 +132,7 @@ func PrintPowerCurveChart(w io.Writer, curve store.PowerCurve) {
 	}
 	chart := asciigraph.Plot(data,
 		asciigraph.Height(15),
-		asciigraph.Width(80),
+		asciigraph.Width(asciigraphWidth),
 		asciigraph.Caption("power curve"),
 		asciigraph.SeriesColors(asciigraph.Red),
 	)
@@ -132,9 +141,7 @@ func PrintPowerCurveChart(w io.Writer, curve store.PowerCurve) {
 }
 
 // powerCurveXLabels builds an approximate X-axis label line for the power curve chart.
-// The chart width is 80 columns; the Y-axis gutter is ~9 chars wide, leaving ~71 for data.
 func powerCurveXLabels(pts []store.PowerCurvePoint) string {
-	const chartWidth = 71
 	n := len(pts)
 	if n == 0 {
 		return ""
@@ -143,7 +150,7 @@ func powerCurveXLabels(pts []store.PowerCurvePoint) string {
 	tickDurations := []int{5, 30, 60, 300, 600, 1200, 3600}
 	maxDuration := pts[n-1].DurationS
 
-	buf := make([]byte, chartWidth+10)
+	buf := make([]byte, asciigraphDataWidth+10)
 	for i := range buf {
 		buf[i] = ' '
 	}
@@ -153,14 +160,14 @@ func powerCurveXLabels(pts []store.PowerCurvePoint) string {
 			break
 		}
 		label := formatPCDuration(d)
-		pos := durationToPos(d, pts[0].DurationS, maxDuration, chartWidth)
+		pos := durationToPos(d, pts[0].DurationS, maxDuration, asciigraphDataWidth)
 		if pos+len(label) > len(buf) {
 			continue
 		}
 		copy(buf[pos:], label)
 	}
 
-	return "         " + strings.TrimRight(string(buf), " ")
+	return asciigraphGutter + strings.TrimRight(string(buf), " ")
 }
 
 // durationToPos maps a duration to a character position in the chart data area (log scale).

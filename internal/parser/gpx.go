@@ -42,7 +42,7 @@ func ParseGPX(filename string, data []byte) (*Ride, []Stream, error) {
 		if i > 0 {
 			prev := points[i-1]
 			dt := pt.Timestamp.Sub(prev.Timestamp).Seconds()
-			dd := haversine(prev.Latitude, prev.Longitude, pt.Latitude, pt.Longitude)
+			dd := HaversineM(prev.Latitude, prev.Longitude, pt.Latitude, pt.Longitude)
 			totalDist += dd
 			if dt > 0 {
 				s := dd / dt
@@ -83,8 +83,8 @@ func ParseGPX(filename string, data []byte) (*Ride, []Stream, error) {
 	return ride, streams, nil
 }
 
-// haversine returns the distance in metres between two lat/lon points.
-func haversine(lat1, lon1, lat2, lon2 float64) float64 {
+// HaversineM returns the great-circle distance in metres between two lat/lon points.
+func HaversineM(lat1, lon1, lat2, lon2 float64) float64 {
 	const R = 6371000 // Earth radius in metres
 	φ1 := lat1 * math.Pi / 180
 	φ2 := lat2 * math.Pi / 180

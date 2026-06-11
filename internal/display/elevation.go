@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/HGClarke/paceline/internal/parser"
 	"github.com/HGClarke/paceline/internal/store"
 	"github.com/guptarohit/asciigraph"
 )
@@ -14,8 +15,6 @@ import (
 // PrintElevationProfile renders an ASCII elevation chart (altitude vs distance) to w.
 // pts must come from store.GetGPSPoints; points without AltitudeM are silently skipped.
 func PrintElevationProfile(w io.Writer, pts []store.GPSPoint, units string, ridePos int64, date time.Time) {
-	fmt.Fprintf(w, "Elevation Profile — Ride %d (%s)\n\n", ridePos, date.Format("2006-01-02"))
-
 	var altPts []store.GPSPoint
 	for _, p := range pts {
 		if p.AltitudeM != nil {
@@ -27,66 +26,58 @@ func PrintElevationProfile(w io.Writer, pts []store.GPSPoint, units string, ride
 		return
 	}
 
-	cumDist := 0.0
+	fmt.Fprintf(w, "Elevation Profile — Ride %d (%s)\n\n", ridePos, date.Format("2006-01-02"))
+
+	altUnit, factor := "m", 1.0
+	if units == "imperial" {
+		altUnit, factor = "ft", 3.28084
+	}
+
+	cumDists := make([]float64, len(altPts))
 	displayAlt := make([]float64, len(altPts))
-	altUnit := "m"
 	for i, p := range altPts {
 		if i > 0 {
-			cumDist += haversineM(altPts[i-1].Lat, altPts[i-1].Lon, p.Lat, p.Lon)
+			cumDists[i] = cumDists[i-1] + parser.HaversineM(altPts[i-1].Lat, altPts[i-1].Lon, p.Lat, p.Lon)
 		}
-		if units == "imperial" {
-			displayAlt[i] = *p.AltitudeM * 3.28084
-			altUnit = "ft"
-		} else {
-			displayAlt[i] = *p.AltitudeM
-		}
+		displayAlt[i] = *p.AltitudeM * factor
 	}
 
 	caption := fmt.Sprintf("elevation (%s)", altUnit)
 	chart := asciigraph.Plot(displayAlt,
 		asciigraph.Height(15),
-		asciigraph.Width(80),
+		asciigraph.Width(asciigraphWidth),
 		asciigraph.Caption(caption),
 		asciigraph.SeriesColors(asciigraph.Cyan),
 	)
 	fmt.Fprintln(w, chart)
-	fmt.Fprintln(w, elevXLabels(cumDist, len(altPts), units))
-}
-
-// haversineM returns the great-circle distance in metres between two lat/lon points.
-func haversineM(lat1, lon1, lat2, lon2 float64) float64 {
-	const R = 6371000
-	dLat := (lat2 - lat1) * math.Pi / 180
-	dLon := (lon2 - lon1) * math.Pi / 180
-	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
-		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
-			math.Sin(dLon/2)*math.Sin(dLon/2)
-	return R * 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	fmt.Fprintln(w, elevXLabels(cumDists, units))
 }
 
 // elevXLabels builds a distance X-axis label line for the elevation chart.
-// The chart is 80 cols wide; the Y-axis gutter is ~9 chars, leaving ~71 for data.
-func elevXLabels(totalDistM float64, nPts int, units string) string {
-	const chartWidth = 71
-	if nPts <= 0 || totalDistM == 0 {
+// Labels at 0%, 25%, 50%, 75%, and 100% of the chart width show the actual
+// cumulative distance at those data point indices, matching chart position to real distance.
+func elevXLabels(cumDists []float64, units string) string {
+	n := len(cumDists)
+	if n == 0 || cumDists[n-1] == 0 {
 		return ""
 	}
 
-	buf := make([]byte, chartWidth+10)
+	buf := make([]byte, asciigraphDataWidth+10)
 	for i := range buf {
 		buf[i] = ' '
 	}
 
 	for _, f := range []float64{0, 0.25, 0.5, 0.75, 1.0} {
-		label := formatElevDist(totalDistM*f, units)
-		pos := int(f * float64(chartWidth-1))
+		idx := int(math.Round(f * float64(n-1)))
+		label := formatElevDist(cumDists[idx], units)
+		pos := int(math.Round(f * float64(asciigraphDataWidth-1)))
 		if pos+len(label) > len(buf) {
 			pos = len(buf) - len(label)
 		}
 		copy(buf[pos:], label)
 	}
 
-	return "         " + strings.TrimRight(string(buf), " ")
+	return asciigraphGutter + strings.TrimRight(string(buf), " ")
 }
 
 // formatElevDist formats a distance in metres for the elevation X-axis.

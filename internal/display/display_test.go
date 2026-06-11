@@ -716,16 +716,16 @@ func TestPrintRoute_SinglePoint(t *testing.T) {
 
 func TestHaversineM_LondonParis(t *testing.T) {
 	// London (51.5074, -0.1278) to Paris (48.8566, 2.3522) ≈ 340 km
-	dist := haversineM(51.5074, -0.1278, 48.8566, 2.3522)
+	dist := parser.HaversineM(51.5074, -0.1278, 48.8566, 2.3522)
 	if dist < 330000 || dist > 350000 {
-		t.Errorf("haversineM London-Paris = %.0f m, expected ~340000", dist)
+		t.Errorf("parser.HaversineM London-Paris = %.0f m, expected ~340000", dist)
 	}
 }
 
 func TestHaversineM_SamePoint(t *testing.T) {
-	dist := haversineM(51.50, -0.13, 51.50, -0.13)
+	dist := parser.HaversineM(51.50, -0.13, 51.50, -0.13)
 	if dist != 0 {
-		t.Errorf("haversineM same point = %f, want 0", dist)
+		t.Errorf("parser.HaversineM same point = %f, want 0", dist)
 	}
 }
 
@@ -745,7 +745,12 @@ func TestFormatElevDist_Imperial(t *testing.T) {
 }
 
 func TestElevXLabels_Metric(t *testing.T) {
-	labels := elevXLabels(100000, 100, "metric") // 100 km
+	// 101 points uniformly spaced at 1 km each → total 100 km
+	cumDists := make([]float64, 101)
+	for i := range cumDists {
+		cumDists[i] = float64(i) * 1000
+	}
+	labels := elevXLabels(cumDists, "metric")
 	if !strings.Contains(labels, "0.0km") {
 		t.Errorf("expected '0.0km' in labels, got: %q", labels)
 	}
@@ -755,8 +760,12 @@ func TestElevXLabels_Metric(t *testing.T) {
 }
 
 func TestElevXLabels_Imperial(t *testing.T) {
-	// 80467.2 m = 50 miles
-	labels := elevXLabels(80467.2, 100, "imperial")
+	// 101 points uniformly spaced → total 50 miles (80467.2 m)
+	cumDists := make([]float64, 101)
+	for i := range cumDists {
+		cumDists[i] = float64(i) * 804.672
+	}
+	labels := elevXLabels(cumDists, "imperial")
 	if !strings.Contains(labels, "0.0mi") {
 		t.Errorf("expected '0.0mi' in labels, got: %q", labels)
 	}
@@ -766,7 +775,7 @@ func TestElevXLabels_Imperial(t *testing.T) {
 }
 
 func TestElevXLabels_ZeroDistance(t *testing.T) {
-	got := elevXLabels(0, 1, "metric")
+	got := elevXLabels([]float64{0}, "metric")
 	if got != "" {
 		t.Errorf("elevXLabels zero distance = %q, want empty string", got)
 	}
@@ -776,11 +785,11 @@ func TestPrintElevationProfile_NoGPS(t *testing.T) {
 	var buf bytes.Buffer
 	PrintElevationProfile(&buf, nil, "metric", 1, time.Date(2025, 5, 10, 0, 0, 0, 0, time.UTC))
 	out := buf.String()
-	if !strings.Contains(out, "Elevation Profile") {
-		t.Errorf("expected header, got:\n%s", out)
-	}
 	if !strings.Contains(out, "No altitude data") {
 		t.Errorf("expected no-data message for nil pts, got:\n%s", out)
+	}
+	if strings.Contains(out, "Elevation Profile") {
+		t.Errorf("header should not appear when there is no altitude data, got:\n%s", out)
 	}
 }
 

@@ -19,7 +19,7 @@
 | 6   | [Power curve](#6-power-curve)                                                            | 🟡 High   | Medium | ✅ Completed   |
 | 7   | [Ride naming & notes](#7-ride-naming--notes)                                             | 🟡 High   | Medium | ⬜ Not Started |
 | 8   | [Bulk / directory import](#8-bulk--directory-import)                                     | 🟡 High   | Medium | ✅ Completed   |
-| 9   | [HR zone analysis](#9-hr-zone-analysis)                                                  | 🟠 Medium | Medium | ⬜ Not Started |
+| 9   | [Zone analysis (HR & power)](#9-zone-analysis-hr--power)                                 | 🟠 Medium | Medium | ⬜ Not Started |
 | 10  | [Streak & consistency tracking](#10-streak--consistency-tracking)                        | 🟠 Medium | Medium | ⬜ Not Started |
 | 11  | [Year-over-year comparison](#11-year-over-year-comparison)                               | 🟠 Medium | Medium | ✅ Completed   |
 | 12  | [Multi-field stream overlay](#12-multi-field-stream-overlay)                             | 🟠 Medium | Medium | ✅ Completed   |
@@ -31,6 +31,8 @@
 | 18  | [Homebrew installation](#18-homebrew-installation)                                       | 🔵 Lower  | Low    | ⬜ Not Started |
 | 19  | [Route → OpenStreetMap](#19-route--openstreetmap)                                        | 🔵 Lower  | Low    | ✅ Completed   |
 | 20  | [Elevation profile](#20-elevation-profile)                                               | 🔵 Lower  | Low    | ✅ Completed   |
+| 21  | [Config & personalization (FTP / max HR / weight)](#21-config--personalization-ftp--max-hr--weight) | 🔴 High | Low | ⬜ Not Started |
+| 22  | [Static route map (GPS track on map tiles)](#22-static-route-map-gps-track-on-map-tiles) | 🟠 Medium | Medium | ⬜ Not Started |
 
 
 ---
@@ -334,34 +336,59 @@ paceline import ~/Downloads/garmin-activities/ --dry-run
 
 ## 🟠 Medium Priority, Medium Effort
 
-### 9. HR Zone Analysis
+### 9. Zone Analysis (HR & Power)
 
 **Description**
-Heart rate zones divide effort into five training bands based on a percentage of max HR (Zone 1: recovery, Zone 2: aerobic base, Zone 3: tempo, Zone 4: threshold, Zone 5: VO2 max). Given a user-configured `hr_max`, the stream data can be bucketed per-second into zones and summarized as time-in-zone. This requires a `hr_max` config entry and a query over the `streams` table.
+Zone analysis breaks a ride into training bands and shows how much time was spent in each. Two zone systems are supported:
+
+- **HR zones** — five bands based on a percentage of `hr_max` (Z1: recovery < 50%, Z2: aerobic 50–60%, Z3: tempo 60–70%, Z4: threshold 70–80%, Z5: VO₂ max > 80%). Requires `hr_max` set in config.
+- **Power zones** — six bands based on a percentage of `ftp` (Z1: active recovery < 55%, Z2: endurance 55–75%, Z3: tempo 75–90%, Z4: threshold 90–105%, Z5: VO₂ max 105–120%, Z6: anaerobic > 120%). Requires `ftp` set in config.
+
+Both systems query the `streams` table, bucketing each data point by zone, then aggregate into a time-in-zone summary with a proportional bar.
 
 **Why it's impactful**
-Most structured training plans are written in terms of HR zones. A coach prescribing "2 hours in Zone 2" needs to verify compliance — and without zone analysis, a rider can only guess. Zone distribution is also a quick health check on training balance (too much Zone 3 is the classic "junk miles" trap). This bridges the gap between data collection and training structure.
+Most structured training plans are prescribed in zones — "2 hours in Zone 2" or "3×10 min at threshold." Without time-in-zone, a rider can only guess whether they executed a workout correctly. Zone distribution is also the fastest way to spot training imbalances: too much Zone 3 is the classic "junk miles" trap; too little Zone 2 means missing aerobic base. Being able to see this for both HR and power — and across a whole training period — is the core loop of evidence-based training.
+
+**Depends on:** [#21 Config & Personalization](#21-config--personalization-ftp--max-hr--weight) for `hr_max` and `ftp` values.
 
 **Proposed commands**
 
 ```bash
-# Set max HR in config
+# Set thresholds in config (see #21)
 paceline config set hr_max 185
+paceline config set ftp 265
 
-# Zone breakdown for a single ride
+# HR zone breakdown for a single ride (auto-selects HR if ftp not set)
 paceline ride 42 zones
 
-# Example output:
+# Explicit field selection
+paceline ride 42 zones --hr
+paceline ride 42 zones --power
+
+# Example HR output:
 # HR Zones — Ride 42 (2025-05-10)  [Max HR: 185 bpm]
-# ┌────────┬───────────────┬──────────┬───────────┬────────┐
-# │ Zone   │ Range         │ Time     │ % of ride │ Bar    │
-# ├────────┼───────────────┼──────────┼───────────┼────────┤
-# │ Z1     │ < 93 bpm      │  8m 12s  │    7%     │ ██     │
-# │ Z2     │ 93–111 bpm    │ 42m 30s  │   37%     │ ██████ │
-# │ Z3     │ 111–130 bpm   │ 28m 15s  │   25%     │ ████   │
-# │ Z4     │ 130–148 bpm   │ 22m 10s  │   19%     │ ███    │
-# │ Z5     │ > 148 bpm     │ 13m 53s  │   12%     │ ██     │
-# └────────┴───────────────┴──────────┴───────────┴────────┘
+# ┌────────┬───────────────┬──────────┬───────────┬────────────┐
+# │ Zone   │ Range         │ Time     │ % of ride │ Bar        │
+# ├────────┼───────────────┼──────────┼───────────┼────────────┤
+# │ Z1     │ < 93 bpm      │  8m 12s  │    7%     │ ██         │
+# │ Z2     │ 93–111 bpm    │ 42m 30s  │   37%     │ ██████████ │
+# │ Z3     │ 111–130 bpm   │ 28m 15s  │   25%     │ ███████    │
+# │ Z4     │ 130–148 bpm   │ 22m 10s  │   19%     │ █████      │
+# │ Z5     │ > 148 bpm     │ 13m 53s  │   12%     │ ███        │
+# └────────┴───────────────┴──────────┴───────────┴────────────┘
+
+# Example power output:
+# Power Zones — Ride 42 (2025-05-10)  [FTP: 265 W]
+# ┌────────┬───────────────┬──────────┬───────────┬────────────┐
+# │ Zone   │ Range         │ Time     │ % of ride │ Bar        │
+# ├────────┼───────────────┼──────────┼───────────┼────────────┤
+# │ Z1     │ < 146 W       │ 12m 05s  │   10%     │ ███        │
+# │ Z2     │ 146–199 W     │ 38m 22s  │   33%     │ █████████  │
+# │ Z3     │ 199–239 W     │ 29m 48s  │   26%     │ ███████    │
+# │ Z4     │ 239–278 W     │ 22m 10s  │   19%     │ █████      │
+# │ Z5     │ 278–318 W     │ 10m 30s  │    9%     │ ██         │
+# │ Z6     │ > 318 W       │  2m 05s  │    3%     │ █          │
+# └────────┴───────────────┴──────────┴───────────┴────────────┘
 
 # Zone summary across a period
 paceline stats --year 2025 --zones
@@ -780,42 +807,148 @@ paceline ride 3 elevation
 
 ---
 
-## Implementation Notes
+### 21. Config & Personalization (FTP / Max HR / Weight)
 
-### Config System (Prerequisite for Features 1, 9, 13, 16)
+**Description**
+Extend the config system with three training-relevant personal fields:
 
-Features 1, 9, 13, and 16 all require a persistent config file. This should be implemented first as a shared foundation:
+- `ftp` — Functional Threshold Power in watts. Used by [#9 Zone Analysis](#9-zone-analysis-hr--power) (power zones) and [#16 FTP-Based Training Metrics](#16-ftp-based-training-metrics-np--if--tss) (NP/IF/TSS).
+- `hr_max` — Maximum heart rate in bpm. Used by [#9 Zone Analysis](#9-zone-analysis-hr--power) (HR zones).
+- `weight_kg` — Rider weight in kilograms. Enables W/kg display alongside raw watts in ride detail, power curve, and stats output.
+
+All three are optional. Features that depend on them degrade gracefully: zone analysis is skipped if the required threshold is unset, W/kg is omitted if weight is unset, and NP/IF/TSS are hidden if FTP is unset.
+
+The config file (`~/.paceline/config.toml`) gains three new optional fields. The `config set` / `config get` commands already exist and will handle the new keys without structural changes — only `Config` struct fields, TOML tags, and validation need to be added.
+
+**Why it's impactful**
+These three numbers are the foundation of quantified cycling training. Without them, PacelineCLI can describe what happened on a ride but not evaluate it. With them, the tool gains the vocabulary to answer "was this ride too hard?", "am I building fitness or burning out?", and "how does my power-to-weight compare to last season?" — the questions that actually drive training decisions.
+
+**Proposed commands**
+
+```bash
+# Set fields
+paceline config set ftp 265
+paceline config set hr_max 185
+paceline config set weight_kg 72
+
+# Retrieve individual values
+paceline config get ftp
+
+# View all settings
+paceline config
+# Example output:
+# ┌────────────┬─────────┐
+# │ Key        │ Value   │
+# ├────────────┼─────────┤
+# │ units      │ metric  │
+# │ ftp        │ 265 W   │
+# │ hr_max     │ 185 bpm │
+# │ weight_kg  │ 72 kg   │
+# └────────────┴─────────┘
+```
+
+Once `weight_kg` is set, ride detail and power curve output gain a W/kg column:
+
+```
+# Existing row
+│ Avg Power     │ 231 W        │
+# New row (shown only when weight_kg is set)
+│               │ 3.2 W/kg     │
+```
+
+**Config file after all fields set:**
 
 ```toml
 # ~/.paceline/config.toml
-units   = "imperial"   # "metric" | "imperial"
-hr_max  = 185          # used for zone calculations
-ftp     = 265          # used for NP/IF/TSS
+units      = "metric"
+ftp        = 265
+hr_max     = 185
+weight_kg  = 72
 ```
 
-A `paceline config` command family (`config set <key> <value>`, `config get <key>`, `config list`) makes this user-accessible without requiring manual file edits.
+**Effort estimate: Low**
+All infrastructure already exists. Changes are confined to `internal/config/config.go` (new struct fields + validation), `cmd/config.go` (display new keys), and any display function that conditionally shows W/kg.
+
+---
+
+### 22. Static Route Map (GPS Track on Map Tiles)
+
+**Description**
+Enhance `paceline ride <n> route --open` to render the actual GPS track drawn on real map tiles — not just a bounding box zoom. The route is encoded as an OSM-compatible URL that a browser can open and immediately show the path, or exported as a local PNG with the track overlaid on stitched tile images.
+
+Two delivery modes are proposed:
+
+**Mode A — Browser URL with polyline (no dependencies)**
+Encode the GPS track as a [Google Encoded Polyline](https://developers.google.com/maps/documentation/utilities/polylinealgorithm) and construct a URL to a service that renders it. Options:
+- `maps.google.com/maps?q=enc:<polyline>` — no API key for basic viewing
+- `geojson.io/#data=data:application/json,<url-encoded-geojson>` — open standard, works offline-ish
+- A self-contained HTML file written to `/tmp` with Leaflet.js + OSM tiles embedded — no external service, opens in any browser, works offline
+
+The Leaflet HTML approach is the most robust: generate a single-file `ride-42-route.html` with the GPS coordinates embedded as a JavaScript array, Leaflet.js loaded from CDN, and OSM tiles fetched on demand. Open it with the OS browser command.
+
+**Mode B — Static PNG (requires Go image library)**
+Fetch OSM tile images covering the bounding box, stitch them into a single canvas using Go's `image` package, draw the GPS polyline on top with anti-aliased lines, and write a PNG to `~/.paceline/exports/ride-42-route.png`. No external dependencies beyond the tile server (tile.openstreetmap.org, which permits reasonable use).
+
+**Recommended approach: Mode A (Leaflet HTML)**
+Zero runtime dependencies, works offline after first tile load, interactive (zoom/pan), and the HTML file is a permanent artifact the user can share or revisit.
+
+**Why it's impactful**
+The terminal Braille map (#15) and the bounding box OSM link (#19) both fall short of actually showing the route: the terminal map lacks street context, and the bounding box link just zooms a blank area. A rendered route on real map tiles is the missing piece — it makes PacelineCLI the first stop after a ride rather than a supplement to Strava or Komoot.
+
+**Proposed commands**
+
+```bash
+# Open interactive route map in browser (Leaflet HTML, Mode A)
+paceline ride 42 route --open
+
+# Export static PNG to ~/.paceline/exports/ (Mode B, future)
+paceline ride 42 route --export
+```
+
+**Effort estimate: Medium**
+Mode A (Leaflet HTML): ~150 lines — polyline JS array generation, HTML template embedding, temp file write, browser open. No new dependencies.
+Mode B (PNG): requires tile fetching (HTTP), image stitching (`image/draw`), and polyline rendering — ~400 lines, no new third-party libraries but more complex.
+
+---
+
+## Implementation Notes
+
+### Config System (Prerequisite for Features 1, 9, 13, 16, 21)
+
+Features 1, 9, 13, 16, and 21 all require a persistent config file. The config system already exists (`units` is live). Feature #21 extends it with three new fields:
+
+```toml
+# ~/.paceline/config.toml
+units      = "imperial"   # "metric" | "imperial"  — live
+hr_max     = 185          # used for HR zone calculations (#9)
+ftp        = 265          # used for power zones (#9) and NP/IF/TSS (#16)
+weight_kg  = 72           # used for W/kg display (#21)
+```
+
+`config set` / `config get` already exist. #21 adds only new struct fields, TOML tags, and validation — no structural command changes needed.
 
 ### Suggested Build Order
 
 Given dependencies and quick wins:
 
-1. **Config system** — unlocks 3 features, low effort
-2. **Units** — immediate user-facing win, unblocked by config
-3. **Date-range filtering** — pure SQL, no dependencies
-4. **Ride sorting** — pure SQL, no dependencies
-5. **Personal records** — pure SQL, high emotional value
-6. **Richer stats** — SQL + display expansion
-7. **Bulk import** — directory traversal + progress display
+1. **Config system** — unlocks 3 features, low effort ✅
+2. **Units** — immediate user-facing win, unblocked by config ✅
+3. **Date-range filtering** — pure SQL, no dependencies ✅
+4. **Ride sorting** — pure SQL, no dependencies ✅
+5. **Personal records** — pure SQL, high emotional value ✅
+6. **Richer stats** — SQL + display expansion ✅
+7. **Bulk import** — directory traversal + progress display ✅
 8. **Ride naming & notes** — schema migration + new commands
-9. **Power curve** — stream query with window functions
-10. **Multi-field overlay** — display layer only
-11. **HR zones** — needs config (hr_max), stream query
-12. **Streak tracking** — gap detection query
-13. **YoY comparison** — display layer + parallel queries
-14. **AI ride analysis** — needs API key (env var or config); v1 uses ride summary only
-15. **Strava sync** — OAuth flow, schema migration, incremental fetch
-16. **FTP metrics** — needs config (ftp), stream computation
-17. **Route map** — GPS projection, standalone
-18. **Watch folder** — background daemon, most complex
-19. **Homebrew installation** — GoReleaser setup, tap repo, GitHub Actions release workflow
+9. **Power curve** — stream query with window functions ✅
+10. **Multi-field overlay** — display layer only ✅
+11. **YoY comparison** — display layer + parallel queries ✅
+12. **Config & personalization (#21)** — extend config with `ftp`, `hr_max`, `weight_kg`; prerequisite for #9 and #16
+13. **Zone analysis (#9)** — HR and power zones; needs `hr_max` / `ftp` from #21
+14. **FTP metrics (#16)** — NP/IF/TSS; needs `ftp` from #21
+15. **Streak tracking** — gap detection query
+16. **AI ride analysis** — needs API key (env var or config); v1 uses ride summary only
+17. **Static route map (#22)** — Leaflet HTML mode (Mode A) first, PNG export (Mode B) later
+18. **Strava sync** — OAuth flow, schema migration, incremental fetch
+19. **Watch folder** — background daemon, most complex
+20. **Homebrew installation** — GoReleaser setup, tap repo, GitHub Actions release workflow
 

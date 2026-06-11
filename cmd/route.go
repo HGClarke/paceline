@@ -69,36 +69,19 @@ func buildOSMURL(pts []store.GPSPoint) string {
 	if len(pts) == 0 {
 		return ""
 	}
-	minLat, maxLat := pts[0].Lat, pts[0].Lat
-	minLon, maxLon := pts[0].Lon, pts[0].Lon
-	for _, p := range pts[1:] {
-		if p.Lat < minLat {
-			minLat = p.Lat
-		}
-		if p.Lat > maxLat {
-			maxLat = p.Lat
-		}
-		if p.Lon < minLon {
-			minLon = p.Lon
-		}
-		if p.Lon > maxLon {
-			maxLon = p.Lon
-		}
-	}
+	minLat, maxLat, minLon, maxLon := display.GPSBounds(pts)
 	return fmt.Sprintf("https://www.openstreetmap.org/?bbox=%.6f,%.6f,%.6f,%.6f",
 		minLon, minLat, maxLon, maxLat)
 }
 
 // openBrowser opens url in the system default browser.
 func openBrowser(url string) error {
-	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = exec.Command("open", url)
+		return exec.Command("open", url).Start()
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	default:
-		cmd = exec.Command("xdg-open", url)
+		return exec.Command("xdg-open", url).Start()
 	}
-	return cmd.Start()
 }

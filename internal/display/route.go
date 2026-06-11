@@ -11,6 +11,28 @@ import (
 
 const resetColor = "\033[0m"
 
+// GPSBounds returns the (minLat, maxLat, minLon, maxLon) bounding box of pts.
+// Assumes len(pts) > 0.
+func GPSBounds(pts []store.GPSPoint) (minLat, maxLat, minLon, maxLon float64) {
+	minLat, maxLat = pts[0].Lat, pts[0].Lat
+	minLon, maxLon = pts[0].Lon, pts[0].Lon
+	for _, p := range pts[1:] {
+		if p.Lat < minLat {
+			minLat = p.Lat
+		}
+		if p.Lat > maxLat {
+			maxLat = p.Lat
+		}
+		if p.Lon < minLon {
+			minLon = p.Lon
+		}
+		if p.Lon > maxLon {
+			maxLon = p.Lon
+		}
+	}
+	return
+}
+
 // PrintRoute renders a GPS route as a Braille Unicode art map to w.
 // width and height are the terminal character dimensions of the data area.
 // filename is shown in the footer.
@@ -24,23 +46,10 @@ func PrintRoute(w io.Writer, pts []store.GPSPoint, width, height int, filename s
 	pixH := height * 4
 
 	// Bounding box with 3% padding per side
-	minLat, maxLat := pts[0].Lat, pts[0].Lat
-	minLon, maxLon := pts[0].Lon, pts[0].Lon
+	minLat, maxLat, minLon, maxLon := GPSBounds(pts)
 	minAlt, maxAlt := math.MaxFloat64, -math.MaxFloat64
 	hasAlt := false
 	for _, p := range pts {
-		if p.Lat < minLat {
-			minLat = p.Lat
-		}
-		if p.Lat > maxLat {
-			maxLat = p.Lat
-		}
-		if p.Lon < minLon {
-			minLon = p.Lon
-		}
-		if p.Lon > maxLon {
-			maxLon = p.Lon
-		}
 		if p.AltitudeM != nil {
 			hasAlt = true
 			if *p.AltitudeM < minAlt {
