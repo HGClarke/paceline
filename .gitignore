@@ -1,6 +1,9 @@
 # Binary
 paceline
 
+# Git worktrees (if created inside the repo)
+.worktrees/
+
 # macOS
 .DS_Store
 

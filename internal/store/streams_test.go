@@ -208,3 +208,72 @@ func TestGetPowerCurve_ConstantPower(t *testing.T) {
 		}
 	}
 }
+
+func TestGetGPSPoints_NoData(t *testing.T) {
+	s := openTestStore(t)
+	rideID := insertTestRide(t, s, "gps_no_data.gpx")
+	speed := 5.0
+	streams := []parser.Stream{
+		{RideID: rideID, Timestamp: time.Now(), ElapsedS: 0, SpeedMPS: &speed},
+	}
+	if err := s.InsertStreams(streams); err != nil {
+		t.Fatalf("InsertStreams: %v", err)
+	}
+
+	pts, err := s.GetGPSPoints(rideID)
+	if err != nil {
+		t.Fatalf("GetGPSPoints: %v", err)
+	}
+	if len(pts) != 0 {
+		t.Errorf("expected empty points, got %d", len(pts))
+	}
+}
+
+func TestGetGPSPoints_WithData(t *testing.T) {
+	s := openTestStore(t)
+	rideID := insertTestRide(t, s, "gps_with_data.gpx")
+	// Insert rows out of order: elapsed_s=1 first, then elapsed_s=0
+	// to verify ORDER BY elapsed_s ASC is actually sorting them.
+	lat1 := 51.5080
+	lon1 := -0.1270
+	lat0 := 51.5074
+	lon0 := -0.1278
+	alt := 120.5
+	streams := []parser.Stream{
+		{RideID: rideID, Timestamp: time.Now().Add(time.Second), ElapsedS: 1, Lat: &lat1, Lon: &lon1},
+		{RideID: rideID, Timestamp: time.Now(), ElapsedS: 0, Lat: &lat0, Lon: &lon0, AltitudeM: &alt},
+	}
+	if err := s.InsertStreams(streams); err != nil {
+		t.Fatalf("InsertStreams: %v", err)
+	}
+
+	pts, err := s.GetGPSPoints(rideID)
+	if err != nil {
+		t.Fatalf("GetGPSPoints: %v", err)
+	}
+	if len(pts) != 2 {
+		t.Errorf("expected 2 points, got %d", len(pts))
+	}
+
+	if pts[0].ElapsedS != 0 {
+		t.Errorf("point[0].ElapsedS = %d, want 0", pts[0].ElapsedS)
+	}
+	if pts[0].Lat < 51.5073 || pts[0].Lat > 51.5075 {
+		t.Errorf("point[0].Lat = %f, want ~51.5074", pts[0].Lat)
+	}
+	if pts[0].Lon < -0.1279 || pts[0].Lon > -0.1277 {
+		t.Errorf("point[0].Lon = %f, want ~-0.1278", pts[0].Lon)
+	}
+	if pts[0].AltitudeM == nil {
+		t.Error("point[0].AltitudeM should not be nil")
+	} else if *pts[0].AltitudeM < 120.4 || *pts[0].AltitudeM > 120.6 {
+		t.Errorf("point[0].AltitudeM = %f, want ~120.5", *pts[0].AltitudeM)
+	}
+
+	if pts[1].ElapsedS != 1 {
+		t.Errorf("point[1].ElapsedS = %d, want 1", pts[1].ElapsedS)
+	}
+	if pts[1].AltitudeM != nil {
+		t.Error("point[1].AltitudeM should be nil")
+	}
+}

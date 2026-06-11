@@ -8,26 +8,28 @@
 
 ## Priority Matrix
 
-| # | Feature | Priority | Effort | Status |
-|---|---------|----------|--------|--------|
-| 1 | [Unit preferences (metric / imperial)](#1-unit-preferences-metric--imperial) | 🔴 High | Low | ✅ Completed |
-| 2 | [Personal records](#2-personal-records) | 🔴 High | Low | ✅ Completed |
-| 3 | [Date-range filtering](#3-date-range-filtering) | 🔴 High | Low | ✅ Completed |
-| 4 | [Ride sorting](#4-ride-sorting) | 🔴 High | Low | ✅ Completed |
-| 5 | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums) | 🟡 High | Medium | ✅ Completed |
-| 6 | [Power curve](#6-power-curve) | 🟡 High | Medium | ✅ Completed |
-| 7 | [Ride naming & notes](#7-ride-naming--notes) | 🟡 High | Medium | ⬜ Not Started |
-| 8 | [Bulk / directory import](#8-bulk--directory-import) | 🟡 High | Medium | ✅ Completed |
-| 9 | [HR zone analysis](#9-hr-zone-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
-| 10 | [Streak & consistency tracking](#10-streak--consistency-tracking) | 🟠 Medium | Medium | ⬜ Not Started |
-| 11 | [Year-over-year comparison](#11-year-over-year-comparison) | 🟠 Medium | Medium | ✅ Completed |
-| 12 | [Multi-field stream overlay](#12-multi-field-stream-overlay) | 🟠 Medium | Medium | ✅ Completed |
-| 13 | [AI ride analysis](#13-ai-ride-analysis) | 🟠 Medium | Medium | ⬜ Not Started |
-| 14 | [Strava sync](#14-strava-sync) | 🟠 Medium | High | ⬜ Not Started |
-| 15 | [Route map in terminal](#15-route-map-in-terminal) | 🔵 Lower | High | ⬜ Not Started |
-| 16 | [FTP-based training metrics (NP / IF / TSS)](#16-ftp-based-training-metrics-np--if--tss) | 🔵 Lower | High | ⬜ Not Started |
-| 17 | [Watch folder / auto-import](#17-watch-folder--auto-import) | 🔵 Lower | High | ⬜ Not Started |
-| 18 | [Homebrew installation](#18-homebrew-installation) | 🔵 Lower | Low | ⬜ Not Started |
+
+| #   | Feature                                                                                  | Priority  | Effort | Status        |
+| --- | ---------------------------------------------------------------------------------------- | --------- | ------ | ------------- |
+| 1   | [Unit preferences (metric / imperial)](#1-unit-preferences-metric--imperial)             | 🔴 High   | Low    | ✅ Completed   |
+| 2   | [Personal records](#2-personal-records)                                                  | 🔴 High   | Low    | ✅ Completed   |
+| 3   | [Date-range filtering](#3-date-range-filtering)                                          | 🔴 High   | Low    | ✅ Completed   |
+| 4   | [Ride sorting](#4-ride-sorting)                                                          | 🔴 High   | Low    | ✅ Completed   |
+| 5   | [Richer stats (averages & maximums)](#5-richer-stats-averages--maximums)                 | 🟡 High   | Medium | ✅ Completed   |
+| 6   | [Power curve](#6-power-curve)                                                            | 🟡 High   | Medium | ✅ Completed   |
+| 7   | [Ride naming & notes](#7-ride-naming--notes)                                             | 🟡 High   | Medium | ⬜ Not Started |
+| 8   | [Bulk / directory import](#8-bulk--directory-import)                                     | 🟡 High   | Medium | ✅ Completed   |
+| 9   | [HR zone analysis](#9-hr-zone-analysis)                                                  | 🟠 Medium | Medium | ⬜ Not Started |
+| 10  | [Streak & consistency tracking](#10-streak--consistency-tracking)                        | 🟠 Medium | Medium | ⬜ Not Started |
+| 11  | [Year-over-year comparison](#11-year-over-year-comparison)                               | 🟠 Medium | Medium | ✅ Completed   |
+| 12  | [Multi-field stream overlay](#12-multi-field-stream-overlay)                             | 🟠 Medium | Medium | ✅ Completed   |
+| 13  | [AI ride analysis](#13-ai-ride-analysis)                                                 | 🟠 Medium | Medium | ⬜ Not Started |
+| 14  | [Strava sync](#14-strava-sync)                                                           | 🟠 Medium | High   | ⬜ Not Started |
+| 15  | [Route map in terminal](#15-route-map-in-terminal)                                       | 🔵 Lower  | High   | ⬜ Not Started |
+| 16  | [FTP-based training metrics (NP / IF / TSS)](#16-ftp-based-training-metrics-np--if--tss) | 🔵 Lower  | High   | ⬜ Not Started |
+| 17  | [Watch folder / auto-import](#17-watch-folder--auto-import)                              | 🔵 Lower  | High   | ⬜ Not Started |
+| 18  | [Homebrew installation](#18-homebrew-installation)                                       | 🔵 Lower  | Low    | ⬜ Not Started |
+
 
 ---
 
@@ -38,12 +40,13 @@
 **Description**
 All output currently displays raw SI units — meters, meters-per-second, kilograms. A cyclist in the US or UK sees `48.28 km` as `48280.00 m` and average speed as `6.71 m/s` instead of `15 mph`. The data is correct; the presentation is unusable without mental conversion.
 
-A simple config file at `~/.paceline/config.toml` (or `~/.config/paceline/config.toml`) with a `units` key would control how every `Print*` function formats output. No schema changes required — conversion happens at display time only.
+A simple config file at `~/.paceline/config.toml` (or `~/.config/paceline/config.toml`) with a `units` key would control how every `Print`* function formats output. No schema changes required — conversion happens at display time only.
 
 **Why it's impactful**
 This is a basic usability gate. Any cyclist outside continental Europe either gives up immediately or does mental arithmetic on every number. Fixing this unlocks the tool for a large portion of its natural audience without touching any core logic.
 
 **Proposed commands**
+
 ```bash
 # Set units via a dedicated config command
 paceline config set units imperial
@@ -59,6 +62,7 @@ paceline ride 42            # speed in mph
 ```
 
 **Config file example**
+
 ```toml
 # ~/.paceline/config.toml
 units = "imperial"   # "metric" (default) | "imperial"
@@ -75,6 +79,7 @@ A `records` command that queries the database for all-time bests: longest single
 Cyclists and runners track personal bests obsessively. It's the most emotionally compelling reason to open a training log. Strava's "Achievements" and Garmin's "Personal Records" sections are among their most-viewed pages. Surfacing PRs turns PacelineCLI from a passive log viewer into something users *check* after hard efforts.
 
 **Proposed commands**
+
 ```bash
 # Show all-time personal records
 paceline records
@@ -106,6 +111,7 @@ The `rides` and `stats` commands support filtering by year, month, or exact date
 Training is structured around blocks, not calendar months. Users plan around races, rest periods, and coach-assigned phases that don't align with month boundaries. Without range filtering, `stats` is only useful for calendar-aligned reviews. With it, users can answer "how many kilometers did I ride in my 8-week build?" in one command.
 
 **Proposed commands**
+
 ```bash
 # Filter rides by date range
 paceline rides --from 2025-01-01 --to 2025-03-31
@@ -135,6 +141,7 @@ paceline stats --range ytd
 Cyclists frequently ask "what's my longest ride this year?" or "which ride had the most climbing?" These are discovery queries — they don't know the ID, just a property. Without sorting, the answer requires piping to `--json` and writing an external query. Sorting makes the tool answer natural questions directly.
 
 **Proposed commands**
+
 ```bash
 # Sort by different fields (descending by default for all numeric fields)
 paceline rides --sort distance
@@ -167,6 +174,7 @@ The current `stats` command returns four aggregate columns: ride count, total di
 "How did I perform this month?" is not answered by totals alone. A cyclist wants to know their average power trended up, or that their max HR stayed controlled. Without these metrics, `stats` gives volume context but no quality context. Adding them completes the monthly/weekly review loop that makes a training tool genuinely useful.
 
 **Proposed commands**
+
 ```bash
 # Existing command, expanded output
 paceline stats
@@ -210,6 +218,7 @@ This is the signature analytical feature for any cyclist with a power meter, and
 A power curve is how you estimate FTP (Functional Threshold Power), track fitness gains, and understand your physiological strengths (sprinter vs. climber vs. time-trialist). It transforms raw stream data — which is already stored — into the single most informative output you can give a trained cyclist. No other CLI tool provides this natively.
 
 **Proposed commands**
+
 ```bash
 # Power curve for a single ride (from stream data)
 paceline ride 42 power-curve
@@ -263,6 +272,7 @@ Rides are currently identified only by their source filename (e.g. `2025-05-20T0
 Without names, a list of rides is an unnavigable list of timestamps. Names and notes are what turn a data log into a *training journal* — the difference between a spreadsheet and a diary. Users who ride consistently will want to annotate significant rides, record how they felt, and distinguish a race from a recovery spin. This is table stakes for any tool that aims to be a primary training record.
 
 **Proposed commands**
+
 ```bash
 # Set a name for a ride
 paceline ride 42 rename "Zwift Race — Watopia Hilly Route"
@@ -295,6 +305,7 @@ The current `import` command accepts a single file path. A user with years of hi
 The first experience with any data tool is loading your existing data. If that experience is painful, users leave before they've seen the tool's value. A single `paceline import ~/Downloads/garmin-export/` that loads 500 rides in one shot is a compelling onboarding moment. The import logic is already idempotent, so the only work is directory traversal and progress reporting.
 
 **Proposed commands**
+
 ```bash
 # Import a single file (existing behavior)
 paceline import activity.fit
@@ -330,6 +341,7 @@ Heart rate zones divide effort into five training bands based on a percentage of
 Most structured training plans are written in terms of HR zones. A coach prescribing "2 hours in Zone 2" needs to verify compliance — and without zone analysis, a rider can only guess. Zone distribution is also a quick health check on training balance (too much Zone 3 is the classic "junk miles" trap). This bridges the gap between data collection and training structure.
 
 **Proposed commands**
+
 ```bash
 # Set max HR in config
 paceline config set hr_max 185
@@ -364,6 +376,7 @@ A `streaks` command reports training consistency: current active streak (consecu
 Consistency is the primary driver of athletic improvement — more so than any single hard session. Streak tracking is a powerful behavioral motivator; it's why Duolingo built its entire retention strategy around it. Cyclists and runners who see "you've ridden 18 days in a row" are strongly motivated not to break the chain. This is a low-cost feature that drives daily engagement with the tool.
 
 **Proposed commands**
+
 ```bash
 paceline streaks
 
@@ -393,6 +406,7 @@ paceline streaks --json
 Training progression is only visible with comparison. "I rode 4,200 km last year; am I ahead or behind this year?" is the foundational question every serious athlete asks in January. Without YoY comparison, `stats` shows you snapshots but not trajectory. This single feature makes the tool useful for annual goal tracking.
 
 **Proposed commands**
+
 ```bash
 # Compare current year to last year
 paceline stats --year 2025 --compare 2024
@@ -427,6 +441,7 @@ paceline stats --month 5 --year 2025 --compare 2024
 Single-field charts answer "what did my power look like?" Multi-field overlays answer "how did my body respond to my power?" — a qualitatively richer question. Seeing HR rise through a hard interval while power holds steady, or watching HR drift upward while power drops on a long ride (cardiac drift), is actionable training insight. This turns the chart from a playback tool into an analysis tool.
 
 **Proposed commands**
+
 ```bash
 # Single field (existing behavior unchanged, now with color)
 paceline ride 42 stream --field power
@@ -456,6 +471,7 @@ The API key is configured via the `ANTHROPIC_API_KEY` environment variable, cons
 Raw numbers tell you *what* happened; analysis tells you *what it means*. A cyclist who rode 80 km with 1,400 m of elevation and an average HR of 158 bpm might not know if that was a solid aerobic effort or an overreach — but a well-prompted AI can give a calibrated read in seconds. This turns PacelineCLI from a data viewer into a feedback loop, closing the gap with expensive coaching apps.
 
 **Proposed commands**
+
 ```bash
 # Basic analysis using ride summary metrics
 paceline ride 3 analyze
@@ -487,6 +503,7 @@ paceline ride 3 analyze --model claude-opus-4-7
 ```
 
 **Implementation notes**
+
 - Requires `ANTHROPIC_API_KEY` env var (or future config entry)
 - v1 prompt uses only `rides` table columns — no stream queries needed
 - `--verbose` adds stream aggregates: per-10min power/HR averages, and total time above threshold HR (if HR data exists)
@@ -507,6 +524,7 @@ Most cyclists already record rides on Strava. Requiring manual FIT/GPX export an
 
 **OAuth and authentication**
 Strava uses OAuth 2.0 with an authorization code flow. For a CLI tool, the standard pattern is:
+
 1. Open the user's browser to Strava's authorization URL
 2. Start a short-lived local HTTP listener on a redirect URI (`http://localhost:PORT/callback`)
 3. Exchange the returned code for access + refresh tokens
@@ -514,6 +532,7 @@ Strava uses OAuth 2.0 with an authorization code flow. For a CLI tool, the stand
 
 **Rate limits**
 Strava enforces 100 requests per 15 minutes and 1,000 per day. Sync handles this with:
+
 - **Incremental fetches**: subsequent syncs only request activities after `last_sync_at`, keeping request counts small
 - **Rate-limit backoff**: on a 429 response, read `X-RateLimit-Reset` and sleep until the window resets, then continue — the user sees a paused progress bar, not a failure
 - **Lazy stream fetching**: stream data is fetched per-ride on demand, not during bulk sync, spreading requests across sessions. The activity list endpoint returns up to 200 activities per page (~5 requests for 1,000 activities); fetching streams costs 1 request per ride. Deferring streams keeps the initial sync well within rate limits.
@@ -522,6 +541,7 @@ Strava enforces 100 requests per 15 minutes and 1,000 per day. Sync handles this
 A new nullable `strava_activity_id TEXT UNIQUE` column on `rides` carries the Strava activity ID. Each activity is written to the DB immediately as it is fetched — not batched at the end. This makes the sync inherently resumable without any explicit checkpoint state: **the DB is the checkpoint**.
 
 If a sync is interrupted (network error, process killed, daily rate limit hit):
+
 1. On retry, re-fetch the Strava activity list (cheap — just IDs and summary fields, ~3–5 requests regardless of total count)
 2. Filter out activity IDs already present in the DB
 3. Fetch details only for the remainder
@@ -530,16 +550,19 @@ The retry costs the same as completing the original sync — no duplicate API ca
 
 The `last_sync_at` watermark serves a separate purpose: it optimises *subsequent incremental syncs* by passing `after=last_sync_at` to Strava so only new activities are fetched. It is only updated after a sync completes fully. An interrupted sync leaves the watermark unchanged, so the retry re-walks from the same starting point and relies on the DB-as-checkpoint to skip already-imported activities efficiently.
 
-| Scenario | Behaviour |
-|---|---|
-| Initial sync interrupted at activity 500/847 | Retry re-fetches list, skips 500 already stored, fetches remaining 347 |
-| Daily rate limit hit mid-sync | Wait until midnight UTC reset; retry resumes from where it stopped |
-| Incremental sync interrupted | `last_sync_at` not updated; retry re-fetches since the previous watermark, skips duplicates |
-| Activity imported twice (any cause) | Second insert is a no-op — no duplicate row created |
+
+| Scenario                                     | Behaviour                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Initial sync interrupted at activity 500/847 | Retry re-fetches list, skips 500 already stored, fetches remaining 347                      |
+| Daily rate limit hit mid-sync                | Wait until midnight UTC reset; retry resumes from where it stopped                          |
+| Incremental sync interrupted                 | `last_sync_at` not updated; retry re-fetches since the previous watermark, skips duplicates |
+| Activity imported twice (any cause)          | Second insert is a no-op — no duplicate row created                                         |
+
 
 File-based rides (imported via `import`) have a `NULL` `strava_activity_id`; the two import paths coexist without conflict.
 
 **Proposed commands**
+
 ```bash
 # First run: authenticate and full sync
 paceline sync strava
@@ -567,6 +590,7 @@ paceline sync wahoo
 ```
 
 **Implementation notes**
+
 - Schema migration: add `strava_activity_id TEXT UNIQUE` column to `rides`; add a `sync_state` table (or a row in a `meta` table) to store `last_sync_at` (Unix timestamp, updated only on full success)
 - Write each activity to the DB immediately on fetch — never accumulate in memory and batch-insert
 - OAuth token storage: `~/.paceline/strava-token.json` with `access_token`, `refresh_token`, `expires_at`
@@ -580,7 +604,7 @@ paceline sync wahoo
 
 ## 🔵 Lower Priority, Higher Effort
 
-### 15. Route Map in Terminal  
+### 15. Route Map in Terminal
 
 **Description**
 Latitude and longitude are already captured in the `streams` table but are never displayed. A `route` subcommand would project the GPS coordinates onto a 2D ASCII canvas — normalizing lat/lon to terminal character positions and drawing the path using Unicode block characters or Braille patterns. Libraries like `go-term-markdown` or custom projection code can accomplish this.
@@ -589,6 +613,7 @@ Latitude and longitude are already captured in the `streams` table but are never
 A route map is the most visually striking output a cycling CLI can produce. It's the feature that gets screenshots shared on social media and shown to friends. Beyond the "wow" factor, it has real utility — confirming a route was recorded correctly, identifying where a ride went, or comparing two routes. Lat/lon data is captured and wasted today; this makes it visible.
 
 **Proposed commands**
+
 ```bash
 # ASCII route map for a ride
 paceline ride 42 route
@@ -617,6 +642,7 @@ Normalized Power (NP), Intensity Factor (IF), and Training Stress Score (TSS) ar
 These metrics are how coaches and athletes quantify training load and prescribe recovery. TSS in particular is the foundation for modeling fatigue (ATL) and fitness (CTL) over time. Any cyclist using a structured training plan already tracks these numbers; if PacelineCLI doesn't provide them, those users stay on TrainingPeaks or Intervals.icu regardless of how good everything else is. Adding NP/IF/TSS turns PacelineCLI from a log into a training management tool.
 
 **Proposed commands**
+
 ```bash
 # Set FTP in config
 paceline config set ftp 265
@@ -644,6 +670,7 @@ A `watch` command starts a background daemon that monitors a specified directory
 Many cyclists sync their Garmin or Wahoo to a desktop app that writes FIT files to a known directory. Auto-import closes the loop: finish a ride, sync device, open terminal — the ride is already there. This elevates PacelineCLI from a tool you have to feed into a tool that stays up to date automatically. It's the difference between a passive archive and a live training dashboard.
 
 **Proposed commands**
+
 ```bash
 # Start watching a directory (runs in background)
 paceline watch ~/Library/Application\ Support/Garmin/Devices/
@@ -682,8 +709,9 @@ This requires two things: an automated release pipeline using [GoReleaser](https
 
 **Effort estimate: Low**
 The majority of the work is configuration, not code:
+
 - `.goreleaser.yml` — ~30 lines of YAML configuring build targets, archive naming, and checksum generation
-- `.github/workflows/release.yml` — GitHub Actions workflow that runs GoReleaser on `git tag v*` pushes (~20 lines)
+- `.github/workflows/release.yml` — GitHub Actions workflow that runs GoReleaser on `git tag v`* pushes (~20 lines)
 - `homebrew-paceline` repo — a new public GitHub repository; GoReleaser auto-generates and pushes the formula file on each release, so no manual formula maintenance is needed after initial setup
 - One-time setup: create a GitHub personal access token scoped to the tap repo so GoReleaser can push the formula update
 
@@ -691,12 +719,15 @@ Total estimated time: **2–4 hours** for initial setup; subsequent releases are
 
 **Prerequisite**
 A tagged versioning convention (e.g. `v1.0.0`) and a version injection mechanism in the binary. The version should be injected at build time via ldflags:
+
 ```bash
 go build -ldflags "-X github.com/HGClarke/paceline/cmd.version={{.Version}}" -o paceline .
 ```
+
 This also unlocks a `paceline version` command as a natural side effect.
 
 **Proposed commands**
+
 ```bash
 # One-time tap registration (only needed once per machine)
 brew tap HGClarke/paceline
@@ -716,6 +747,7 @@ brew install HGClarke/paceline/paceline
 ## Implementation Notes
 
 ### Config System (Prerequisite for Features 1, 9, 13, 16)
+
 Features 1, 9, 13, and 16 all require a persistent config file. This should be implemented first as a shared foundation:
 
 ```toml
@@ -728,6 +760,7 @@ ftp     = 265          # used for NP/IF/TSS
 A `paceline config` command family (`config set <key> <value>`, `config get <key>`, `config list`) makes this user-accessible without requiring manual file edits.
 
 ### Suggested Build Order
+
 Given dependencies and quick wins:
 
 1. **Config system** — unlocks 3 features, low effort
@@ -749,3 +782,4 @@ Given dependencies and quick wins:
 17. **Route map** — GPS projection, standalone
 18. **Watch folder** — background daemon, most complex
 19. **Homebrew installation** — GoReleaser setup, tap repo, GitHub Actions release workflow
+

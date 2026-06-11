@@ -243,6 +243,43 @@ func fieldColumn(field string) (string, bool) {
 	return col, ok
 }
 
+// GPSPoint is a single GPS sample from the streams table.
+type GPSPoint struct {
+	ElapsedS  int
+	Lat       float64
+	Lon       float64
+	AltitudeM *float64
+}
+
+// GetGPSPoints returns all GPS-tagged stream points for a ride, ordered by elapsed time.
+// Points without lat/lon are excluded. Returns an empty slice (not an error) when no GPS data exists.
+func (s *Store) GetGPSPoints(rideID int64) ([]GPSPoint, error) {
+	rows, err := s.db.Query(`
+		SELECT elapsed_s, lat, lon, altitude_m
+		FROM streams
+		WHERE ride_id = ? AND lat IS NOT NULL AND lon IS NOT NULL
+		ORDER BY elapsed_s ASC`, rideID)
+	if err != nil {
+		return nil, fmt.Errorf("get gps points: %w", err)
+	}
+	defer rows.Close()
+
+	var pts []GPSPoint
+	for rows.Next() {
+		var p GPSPoint
+		var alt *float64
+		if err := rows.Scan(&p.ElapsedS, &p.Lat, &p.Lon, &alt); err != nil {
+			return nil, fmt.Errorf("scan gps point: %w", err)
+		}
+		p.AltitudeM = alt
+		pts = append(pts, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get gps points: %w", err)
+	}
+	return pts, nil
+}
+
 func scanStreams(rows interface {
 	Next() bool
 	Scan(...any) error
