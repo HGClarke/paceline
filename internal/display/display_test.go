@@ -618,6 +618,51 @@ func TestPrintStreamChart_Overlay(t *testing.T) {
 	}
 }
 
+func TestPrintRoute_NoGPS(t *testing.T) {
+	var buf bytes.Buffer
+	PrintRoute(&buf, nil, 78, 28, "test_ride.fit")
+	out := buf.String()
+	if !strings.Contains(out, "No GPS data") {
+		t.Errorf("expected 'No GPS data' in output, got:\n%s", out)
+	}
+}
+
+func TestPrintRoute_WithData(t *testing.T) {
+	alt0, alt1 := 100.0, 200.0
+	pts := []store.GPSPoint{
+		{ElapsedS: 0, Lat: 51.50, Lon: -0.13, AltitudeM: &alt0},
+		{ElapsedS: 60, Lat: 51.51, Lon: -0.13, AltitudeM: &alt1},
+		{ElapsedS: 120, Lat: 51.51, Lon: -0.12, AltitudeM: &alt1},
+		{ElapsedS: 180, Lat: 51.50, Lon: -0.12, AltitudeM: &alt0},
+		{ElapsedS: 240, Lat: 51.50, Lon: -0.13, AltitudeM: &alt0},
+	}
+	var buf bytes.Buffer
+	PrintRoute(&buf, pts, 78, 28, "test_ride.fit")
+	out := buf.String()
+	if !strings.Contains(out, "┌") {
+		t.Errorf("expected '┌' in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "┘") {
+		t.Errorf("expected '┘' in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "test_ride.fit") {
+		t.Errorf("expected filename in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "gradient:") {
+		t.Errorf("expected gradient legend in output, got:\n%s", out)
+	}
+	hasBraille := false
+	for _, r := range out {
+		if r >= 0x2801 && r <= 0x28FF {
+			hasBraille = true
+			break
+		}
+	}
+	if !hasBraille {
+		t.Errorf("expected at least one Braille character in output")
+	}
+}
+
 func TestPrintStatsComparison_JSON(t *testing.T) {
 	st1 := store.Stats{RideCount: 10, TotalDistanceM: 100000}
 	st2 := store.Stats{RideCount: 8, TotalDistanceM: 80000}
@@ -648,5 +693,23 @@ func TestPrintStatsComparison_JSON(t *testing.T) {
 	}
 	if out.Compare.Stats.RideCount != 8 {
 		t.Errorf("compare ride count = %d, want 8", out.Compare.Stats.RideCount)
+	}
+}
+
+func TestPrintRoute_SinglePoint(t *testing.T) {
+	alt := 150.0
+	pts := []store.GPSPoint{{ElapsedS: 0, Lat: 51.50, Lon: -0.13, AltitudeM: &alt}}
+	var buf bytes.Buffer
+	PrintRoute(&buf, pts, 78, 28, "test.fit")
+	out := buf.String()
+	// Must not panic and must render a framed output
+	if !strings.Contains(out, "┌") {
+		t.Errorf("expected '┌' in output for single point, got:\n%s", out)
+	}
+	if !strings.Contains(out, "┘") {
+		t.Errorf("expected '┘' in output for single point, got:\n%s", out)
+	}
+	if !strings.Contains(out, "test.fit") {
+		t.Errorf("expected 'test.fit' in output, got:\n%s", out)
 	}
 }
