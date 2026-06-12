@@ -81,9 +81,7 @@ func elevXLabels(cumDists []float64, units string) string {
 }
 
 // formatElevDist formats a distance in metres for the elevation X-axis.
+// Uses compact "3.2km" form (no space) so labels fit the fixed-width byte buffer in elevXLabels.
 func formatElevDist(m float64, units string) string {
-	if units == "imperial" {
-		return fmt.Sprintf("%.1fmi", m/1609.344)
-	}
-	return fmt.Sprintf("%.1fkm", m/1000)
+	return strings.ReplaceAll(FormatDistance(m, units), " ", "")
 }

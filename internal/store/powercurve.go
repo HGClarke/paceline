@@ -48,7 +48,7 @@ func (s *Store) GetPowerCurve(rideID int64) (PowerCurve, error) {
 
 // logSpacedDurations returns ~n integer durations log-spaced between minS and maxS (inclusive).
 func logSpacedDurations(minS, maxS, n int) []int {
-	if maxS <= minS {
+	if maxS <= minS || n <= 1 {
 		return []int{minS}
 	}
 	logMin := math.Log(float64(minS))
@@ -92,18 +92,31 @@ func mergeDurations(a, b []int, maxElapsed int) []int {
 }
 
 // computeMMP slides a window over the stream for each duration and returns the max avg power.
-// Uses elapsed time (not index) so gaps in the recording are handled correctly.
+// Uses elapsed time (not index) so gaps are handled correctly, and averages are time-weighted
+// so variable-rate streams (FIT smart-recording, GPX) produce correct results.
 func computeMMP(points []parser.Stream, durations []int) map[int]int {
 	result := make(map[int]int, len(durations))
 
 	n := len(points)
-	prefix := make([]float64, n+1)
+
+	// Build time-weighted prefix sums. Each sample is weighted by the duration it
+	// represents: the gap to the next sample, or 1 s for the final sample. This
+	// ensures avg = watts-per-second rather than watts-per-sample.
+	twPrefix := make([]float64, n+1) // cumulative (power × interval)
+	wPrefix := make([]float64, n+1)  // cumulative interval seconds
 	for i, p := range points {
+		interval := 1.0
+		if i < n-1 {
+			if g := float64(points[i+1].ElapsedS - points[i].ElapsedS); g > 0 {
+				interval = g
+			}
+		}
 		v := 0.0
 		if p.PowerW != nil {
 			v = float64(*p.PowerW)
 		}
-		prefix[i+1] = prefix[i] + v
+		twPrefix[i+1] = twPrefix[i] + v*interval
+		wPrefix[i+1] = wPrefix[i] + interval
 	}
 
 	for _, d := range durations {
@@ -113,15 +126,10 @@ func computeMMP(points []parser.Stream, durations []int) map[int]int {
 			for left < right && points[right].ElapsedS-points[left].ElapsedS > d {
 				left++
 			}
-			span := points[right].ElapsedS - points[left].ElapsedS
-			if span < d && right < n-1 {
+			if points[right].ElapsedS-points[left].ElapsedS < d {
 				continue
 			}
-			count := right - left + 1
-			if count <= 0 {
-				continue
-			}
-			avg := (prefix[right+1] - prefix[left]) / float64(count)
+			avg := (twPrefix[right+1] - twPrefix[left]) / (wPrefix[right+1] - wPrefix[left])
 			if avg > best {
 				best = avg
 			}
